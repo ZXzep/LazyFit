@@ -3,22 +3,33 @@
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type {
+  ActivityRef,
   LogMealInput,
   Meal,
   Profile,
+  UserActivity,
   WeekDay,
   WeightPoint,
   Workout,
 } from "@/types/db";
-import { logMeal, logWeight, logWorkout } from "@/app/dashboard/actions";
+import {
+  addActivity,
+  deleteActivity,
+  deleteMeal,
+  deleteWorkout,
+  logMeal,
+  logWeight,
+  logWorkout,
+} from "@/app/dashboard/actions";
 import { greetingTH } from "@/lib/date";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { CaloricBalanceCard } from "./caloric-balance-card";
+import { MealHistory } from "./meal-history";
 import { OnboardingSheet } from "./onboarding-sheet";
 import { QuickAiEstimator } from "./quick-ai-estimator";
-import { StepperLogger } from "./stepper-logger";
 import { WeeklyFlexCard } from "./weekly-flex-card";
 import { WeightTrendCard } from "./weight-trend-card";
+import { WorkoutCard } from "./workout-card";
 
 interface Props {
   userName: string;
@@ -29,6 +40,7 @@ interface Props {
   initialWorkouts: Workout[];
   initialWeek: WeekDay[];
   initialWeights: WeightPoint[];
+  initialActivities: UserActivity[];
 }
 
 export function DashboardClient({
@@ -39,11 +51,13 @@ export function DashboardClient({
   initialWorkouts,
   initialWeek,
   initialWeights,
+  initialActivities,
 }: Props) {
   // ----- local state (seeded from the server, updated optimistically) -------
   const [name, setName] = useState(userName);
   const [meals, setMeals] = useState<Meal[]>(initialMeals);
   const [workouts, setWorkouts] = useState<Workout[]>(initialWorkouts);
+  const [activities, setActivities] = useState<UserActivity[]>(initialActivities);
   const [week, setWeek] = useState<WeekDay[]>(initialWeek);
   const [weights, setWeights] = useState<WeightPoint[]>(initialWeights);
   const [target, setTarget] = useState(profile?.daily_calorie_target ?? 1800);
@@ -59,13 +73,9 @@ export function DashboardClient({
     () => workouts.reduce((s, w) => s + w.calories_burned, 0),
     [workouts],
   );
-  const todayMinutes = useMemo(
-    () => workouts.reduce((s, w) => s + w.duration_min, 0),
-    [workouts],
-  );
   const streak = useMemo(() => computeStreak(week, today), [week, today]);
 
-  // ----- mutations -------------------------------------------------------------
+  // ----- meal mutations --------------------------------------------------------
   const handleLogMeal = useCallback(
     async (input: LogMealInput) => {
       setBusy(true);
@@ -84,14 +94,44 @@ export function DashboardClient({
     [today],
   );
 
+  const handleDeleteMeal = useCallback(
+    async (id: string) => {
+      const target = meals.find((m) => m.id === id);
+      if (!target) return;
+      const prevMeals = meals;
+      const prevWeek = week;
+      setMeals((p) => p.filter((m) => m.id !== id));
+      setWeek((p) => {
+        let n = bumpDay(p, today, "calories_in", -target.calories);
+        if (target.meal_type === "cheat") n = bumpDay(n, today, "cheat_count", -1);
+        return n;
+      });
+      try {
+        await deleteMeal(id);
+      } catch {
+        setMeals(prevMeals);
+        setWeek(prevWeek);
+        toast.error("ลบไม่สำเร็จ");
+      }
+    },
+    [meals, week, today],
+  );
+
+  // ----- workout mutations ----------------------------------------------------
   const handleLogWorkout = useCallback(
-    async (minutes: number) => {
+    async ({ minutes, activity }: { minutes: number; activity: ActivityRef }) => {
       setBusy(true);
       try {
-        const row = await logWorkout(minutes);
+        const row = await logWorkout({
+          minutes,
+          builtinKey: activity.kind === "builtin" ? activity.key : undefined,
+          customId: activity.kind === "custom" ? activity.id : undefined,
+        });
         setWorkouts((prev) => [row, ...prev]);
         setWeek((prev) => bumpDay(prev, today, "calories_out", row.calories_burned));
-        toast.success(`+${minutes} นาที · เบิร์น ${row.calories_burned} kcal 🔥`);
+        toast.success(
+          `${activity.emoji ?? "🔥"} ${activity.label} ${minutes} นาที · เบิร์น ${row.calories_burned} kcal`,
+        );
       } catch {
         toast.error("บันทึกไม่สำเร็จ ลองอีกครั้ง");
       } finally {
@@ -101,6 +141,50 @@ export function DashboardClient({
     [today],
   );
 
+  const handleDeleteWorkout = useCallback(
+    async (id: string) => {
+      const target = workouts.find((w) => w.id === id);
+      if (!target) return;
+      const prevWorkouts = workouts;
+      const prevWeek = week;
+      setWorkouts((p) => p.filter((w) => w.id !== id));
+      setWeek((p) => bumpDay(p, today, "calories_out", -target.calories_burned));
+      try {
+        await deleteWorkout(id);
+      } catch {
+        setWorkouts(prevWorkouts);
+        setWeek(prevWeek);
+        toast.error("ลบไม่สำเร็จ");
+      }
+    },
+    [workouts, week, today],
+  );
+
+  const handleAddActivity = useCallback(
+    async (input: { name: string; emoji?: string; met: number }) => {
+      const row = await addActivity(input);
+      setActivities((prev) => [...prev, row]);
+      toast.success(`เพิ่ม ${row.emoji ?? ""} ${row.name} แล้ว`);
+      return row;
+    },
+    [],
+  );
+
+  const handleDeleteActivity = useCallback(
+    async (id: string) => {
+      const prev = activities;
+      setActivities((p) => p.filter((a) => a.id !== id));
+      try {
+        await deleteActivity(id);
+      } catch {
+        setActivities(prev);
+        toast.error("ลบไม่สำเร็จ");
+      }
+    },
+    [activities],
+  );
+
+  // ----- weight --------------------------------------------------------------
   const handleLogWeight = useCallback(
     async (kg: number) => {
       setBusy(true);
@@ -141,7 +225,19 @@ export function DashboardClient({
   const cards = [
     <CaloricBalanceCard key="balance" caloriesIn={caloriesIn} caloriesOut={caloriesOut} target={target} />,
     <QuickAiEstimator key="ai" busy={busy} onLog={handleLogMeal} />,
-    <StepperLogger key="stepper" todayMinutes={todayMinutes} streak={streak} busy={busy} onLog={handleLogWorkout} />,
+    <MealHistory key="meals" meals={meals} tz={tz} busy={busy} onDelete={handleDeleteMeal} />,
+    <WorkoutCard
+      key="workout"
+      streak={streak}
+      busy={busy}
+      workouts={workouts}
+      activities={activities}
+      tz={tz}
+      onLog={handleLogWorkout}
+      onDeleteWorkout={handleDeleteWorkout}
+      onAddActivity={handleAddActivity}
+      onDeleteActivity={handleDeleteActivity}
+    />,
     <WeeklyFlexCard key="flex" week={week} cheatQuota={cheatQuota} />,
     <WeightTrendCard
       key="weight"
@@ -191,13 +287,13 @@ function bumpDay(week: WeekDay[], day: string, key: BumpKey, by: number): WeekDa
   const next = week.map((d) => {
     if (d.day !== day) return d;
     found = true;
-    const updated = { ...d, [key]: d[key] + by };
+    const updated = { ...d, [key]: Math.max(0, d[key] + by) };
     updated.net = updated.calories_in - updated.calories_out;
     return updated;
   });
   if (!found) {
     const base: WeekDay = { day, calories_in: 0, calories_out: 0, net: 0, cheat_count: 0 };
-    base[key] = by;
+    base[key] = Math.max(0, by);
     base.net = base.calories_in - base.calories_out;
     next.push(base);
     next.sort((a, b) => a.day.localeCompare(b.day));

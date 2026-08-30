@@ -48,6 +48,16 @@ export function thaiWeekday(iso: string): string {
   return ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"][d.getUTCDay()];
 }
 
+/** "18:30" — 24h clock for a Date or ISO string, in the given timezone. */
+export function clockLabel(d: Date | string, tz: string = APP_TZ): string {
+  const date = typeof d === "string" ? new Date(d) : d;
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: tz,
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 export function greetingTH(tz: string = APP_TZ): string {
   const hour = Number(
     new Intl.DateTimeFormat("en-US", { hour: "numeric", hour12: false, timeZone: tz }).format(new Date()),

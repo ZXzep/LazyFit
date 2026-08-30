@@ -3,10 +3,19 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { estimateStepperBurn } from "@/lib/calories";
+import { estimateBurn } from "@/lib/calories";
+import { BUILTIN_BY_KEY } from "@/lib/activities";
 import { calcDailyTarget, goalFromWeights } from "@/lib/nutrition";
 import { todayISO } from "@/lib/date";
-import type { LogMealInput, Meal, OnboardingInput, WeightLog, Workout } from "@/types/db";
+import type {
+  LogMealInput,
+  LogWorkoutInput,
+  Meal,
+  OnboardingInput,
+  UserActivity,
+  WeightLog,
+  Workout,
+} from "@/types/db";
 
 async function requireUser() {
   const supabase = createClient();
@@ -120,32 +129,65 @@ export async function logMeal(input: LogMealInput): Promise<Meal> {
 }
 
 // ---------------------------------------------------------------------------
-//  logWorkout — one-tap mini-stepper session; burn is computed server-side
+//  logWorkout — timer session for any activity; burn computed server-side
 // ---------------------------------------------------------------------------
-export async function logWorkout(durationMin: number): Promise<Workout> {
-  const minutes = z.number().int().min(1).max(600).parse(durationMin);
+const logWorkoutSchema = z
+  .object({
+    minutes: z.number().int().min(1).max(600),
+    builtinKey: z.string().max(40).optional(),
+    customId: z.string().uuid().optional(),
+  })
+  .refine((v) => v.builtinKey || v.customId, { message: "ต้องระบุกิจกรรม" });
+
+export async function logWorkout(input: LogWorkoutInput): Promise<Workout> {
+  const d = logWorkoutSchema.parse(input);
   const { supabase, user } = await requireUser();
+
+  // resolve the activity name / emoji / MET (server is the source of truth)
+  let name = "ออกกำลังกาย";
+  let emoji: string | null = null;
+  let met = 4.5;
+
+  if (d.customId) {
+    const { data: act } = await supabase
+      .from("user_activities")
+      .select("name, emoji, met")
+      .eq("id", d.customId)
+      .eq("user_id", user.id)
+      .single();
+    if (!act) throw new Error("ไม่พบกิจกรรมนี้");
+    name = act.name;
+    emoji = act.emoji;
+    met = Number(act.met);
+  } else if (d.builtinKey) {
+    const b = BUILTIN_BY_KEY[d.builtinKey];
+    if (!b) throw new Error("กิจกรรมไม่ถูกต้อง");
+    name = b.label;
+    emoji = b.emoji;
+    met = b.met;
+  }
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("stepper_met, current_weight_kg")
+    .select("current_weight_kg")
     .eq("id", user.id)
     .single();
 
-  const caloriesBurned = estimateStepperBurn({
-    minutes,
+  const caloriesBurned = estimateBurn({
+    minutes: d.minutes,
+    met,
     weightKg: profile?.current_weight_kg,
-    met: profile?.stepper_met,
   });
 
   const { data: row, error } = await supabase
     .from("workouts")
     .insert({
       user_id: user.id,
-      activity: "stepper",
-      duration_min: minutes,
+      activity: name,
+      activity_emoji: emoji,
+      duration_min: d.minutes,
       calories_burned: caloriesBurned,
-      source: "quick_button",
+      source: "timer",
     })
     .select()
     .single();
@@ -153,6 +195,68 @@ export async function logWorkout(durationMin: number): Promise<Workout> {
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard");
   return row as Workout;
+}
+
+// ---------------------------------------------------------------------------
+//  Custom activities
+// ---------------------------------------------------------------------------
+const addActivitySchema = z.object({
+  name: z.string().trim().min(1).max(30),
+  emoji: z.string().trim().max(8).optional(),
+  met: z.number().min(1).max(20),
+});
+
+export async function addActivity(input: z.input<typeof addActivitySchema>): Promise<UserActivity> {
+  const d = addActivitySchema.parse(input);
+  const { supabase, user } = await requireUser();
+
+  const { data: row, error } = await supabase
+    .from("user_activities")
+    .insert({ user_id: user.id, name: d.name, emoji: d.emoji || null, met: d.met })
+    .select()
+    .single();
+
+  if (error) {
+    if (error.code === "23505") throw new Error("มีกิจกรรมชื่อนี้อยู่แล้ว");
+    throw new Error(error.message);
+  }
+  revalidatePath("/dashboard");
+  return row as UserActivity;
+}
+
+export async function deleteActivity(id: string): Promise<void> {
+  const activityId = z.string().uuid().parse(id);
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase
+    .from("user_activities")
+    .delete()
+    .eq("id", activityId)
+    .eq("user_id", user.id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard");
+}
+
+// ---------------------------------------------------------------------------
+//  Delete log entries (history management)
+// ---------------------------------------------------------------------------
+export async function deleteMeal(id: string): Promise<void> {
+  const mealId = z.string().uuid().parse(id);
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase.from("meals").delete().eq("id", mealId).eq("user_id", user.id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard");
+}
+
+export async function deleteWorkout(id: string): Promise<void> {
+  const workoutId = z.string().uuid().parse(id);
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase
+    .from("workouts")
+    .delete()
+    .eq("id", workoutId)
+    .eq("user_id", user.id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard");
 }
 
 // ---------------------------------------------------------------------------

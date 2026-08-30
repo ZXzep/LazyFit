@@ -14,7 +14,9 @@
 | --- | --- |
 | **Welcome / Onboarding** (2 ขั้น) — เปิดแอปครั้งแรก → ① กล่องทักทายถามชื่อเล่น → ② เพศ/อายุ/ส่วนสูง/น้ำหนัก/กิจกรรม/เป้าหมาย → คำนวณแคลอรีต่อวัน (Mifflin-St Jeor BMR × activity × goal) แสดงผลสด | `src/components/dashboard/onboarding-sheet.tsx` + `src/lib/nutrition.ts` |
 | **Quick AI Calorie Estimator** — พิมพ์ชื่ออาหารไทย/อัปโหลดรูป → ได้ JSON แคลอรี+แมโคร → "Log This Meal" | `src/components/dashboard/quick-ai-estimator.tsx` + `src/app/api/estimate-meal/route.ts` |
-| **One-Click Stepper Logger** — ปุ่ม `[15] [20] [25] [30]` นาที คำนวณแคลอรีเบิร์นอัตโนมัติ + Streak รายสัปดาห์ | `src/components/dashboard/stepper-logger.tsx` + `src/lib/calories.ts` |
+| **Meal history** — รายการมื้อวันนี้: เวลา · ชื่ออาหาร · สิ่งที่พิมพ์ · แมโคร · แคลอรี · ลบได้ | `src/components/dashboard/meal-history.tsx` |
+| **Workout timer** — เลือกกิจกรรม → จับเวลา: countdown จากปุ่ม `[15/20/25/30]` หรือ "ไม่กำหนด" นับขึ้นจนกว่าจะพอ · pause/resume · อยู่รอดตอน reload/ปิดจอ (localStorage + wall-clock) · countdown ครบ = log อัตโนมัติ | `src/components/dashboard/workout-card.tsx` + `src/hooks/use-workout-timer.ts` |
+| **หลายกิจกรรม** — built-in 8 อย่าง (สเต็ปเปอร์/ฮูลาฮูป/เดิน/วิ่ง/ปั่น/กระโดดเชือก/เต้น/โยคะ) + เพิ่มเองได้ (ชื่อ + emoji + ความหนัก เบา/กลาง/หนัก) เก็บใน `user_activities` | `src/lib/activities.ts` |
 | **80/20 Flexibility Weekly Dashboard** — Progress bar โควตา Cheat Meal, สมดุลแคลอรีรายวัน/สัปดาห์, กราฟน้ำหนัก | `src/components/dashboard/weekly-flex-card.tsx`, `caloric-balance-card.tsx`, `weight-trend-card.tsx` |
 
 Mobile-first, PWA-ready (`src/app/manifest.ts`), รองรับ Dark/Light theme (`next-themes`).
@@ -127,7 +129,8 @@ supabase/
 ├── config.toml                          # local stack config (ports, auth, seed)
 ├── migrations/
 │   ├── *_init_lazyfit.sql               # tables + RLS + trigger + views + RPC
-│   └── *_onboarding_profile.sql         # sex / birth_year / activity_level / goal / onboarded_at
+│   ├── *_onboarding_profile.sql         # sex / birth_year / activity_level / goal / onboarded_at
+│   └── *_activities_and_history.sql     # user_activities table + workouts.activity_emoji
 └── seed.sql                             # demo data (local only, comment ไว้)
 scripts/dev-login.mjs                    # dev helper: email+password → session cookie
 src/
@@ -136,18 +139,21 @@ src/
 │   ├── auth/callback/route.ts           # OAuth callback (เผื่ออนาคต)
 │   ├── dashboard/
 │   │   ├── page.tsx                     # Server Component — โหลดข้อมูลเริ่มต้น
-│   │   └── actions.ts                   # Server Actions: saveOnboarding / logMeal / logWorkout / logWeight
+│   │   └── actions.ts                   # Server Actions: saveOnboarding / logMeal /
+│   │                                    #   logWorkout / logWeight / addActivity /
+│   │                                    #   deleteActivity / deleteMeal / deleteWorkout
 │   ├── login/page.tsx                   # email + password
 │   ├── layout.tsx · globals.css · manifest.ts
-├── components/
-│   ├── dashboard/                       # การ์ด + onboarding-sheet (mobile view)
-│   └── ui/                              # Button / Card / Progress
+├── components/dashboard/                # การ์ดทั้งหมด + onboarding-sheet + workout-card
+├── components/ui/                       # Button / Card / Progress
+├── hooks/use-workout-timer.ts           # timer state + localStorage + wall-clock
 ├── lib/
 │   ├── supabase/{client,server,middleware}.ts
 │   ├── nutrition.ts                     # BMR / TDEE / daily target
+│   ├── activities.ts                    # built-in exercises + MET + intensity presets
 │   ├── gemini.ts                        # ตัวเรียก Gemini + schema + error type
-│   ├── calories.ts                      # สูตรคำนวณแคลอรีเบิร์น (MET)
-│   └── date.ts                          # week / timezone helpers
+│   ├── calories.ts                      # estimateBurn (MET equation)
+│   └── date.ts                          # week / timezone / clock helpers
 └── types/db.ts
 ```
 

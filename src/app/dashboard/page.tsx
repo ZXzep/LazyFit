@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
 import { startOfDayISO, startOfWeekISO, todayISO } from "@/lib/date";
-import type { Meal, Profile, WeekDay, WeightPoint, Workout } from "@/types/db";
+import type { Meal, Profile, UserActivity, WeekDay, WeightPoint, Workout } from "@/types/db";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +26,7 @@ export default async function DashboardPage() {
   const weekStart = startOfWeekISO(new Date(), weekStartsOn, tz);
   const dayStart = startOfDayISO(today, tz);
 
-  const [mealsRes, workoutsRes, weekRes, weightRes] = await Promise.all([
+  const [mealsRes, workoutsRes, weekRes, weightRes, activitiesRes] = await Promise.all([
     supabase
       .from("meals")
       .select("*")
@@ -43,6 +43,10 @@ export default async function DashboardPage() {
       .select("logged_on, weight_kg")
       .order("logged_on", { ascending: true })
       .limit(60),
+    supabase
+      .from("user_activities")
+      .select("*")
+      .order("created_at", { ascending: true }),
   ]);
 
   return (
@@ -55,6 +59,7 @@ export default async function DashboardPage() {
       initialWorkouts={(workoutsRes.data ?? []) as Workout[]}
       initialWeek={(weekRes.data ?? []) as WeekDay[]}
       initialWeights={(weightRes.data ?? []) as WeightPoint[]}
+      initialActivities={(activitiesRes.data ?? []) as UserActivity[]}
     />
   );
 }

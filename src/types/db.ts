@@ -57,10 +57,31 @@ export interface Workout {
   user_id: string;
   performed_at: string;
   activity: string;
+  activity_emoji: string | null;
   duration_min: number;
   calories_burned: number;
-  source: "quick_button" | "manual";
+  source: "quick_button" | "timer" | "manual";
   created_at: string;
+}
+
+export interface UserActivity {
+  id: string;
+  user_id: string;
+  name: string;
+  emoji: string | null;
+  met: number;
+  created_at: string;
+}
+
+/** What the workout card hands back when a timer finishes. */
+export type ActivityRef =
+  | { kind: "builtin"; key: string; label: string; emoji: string; met: number }
+  | { kind: "custom"; id: string; label: string; emoji: string | null; met: number };
+
+export interface LogWorkoutInput {
+  minutes: number;
+  builtinKey?: string;
+  customId?: string;
 }
 
 export interface WeightLog {
