@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* light */
+  --background: 150 25% 99%;
+  --foreground: 160 14% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 160 14% 10%;
+  --muted: 150 14% 95%;
+  --muted-foreground: 160 6% 42%;
+  --border: 150 12% 89%;
+  --primary: 152 56% 39%;
+  --primary-foreground: 0 0% 100%;
+  --ring: 152 56% 39%;
+}
+
+.dark {
+  --background: 162 22% 6%;
+  --foreground: 150 12% 95%;
+  --card: 162 18% 10%;
+  --card-foreground: 150 12% 95%;
+  --muted: 162 12% 16%;
+  --muted-foreground: 150 7% 60%;
+  --border: 162 12% 19%;
+  --primary: 152 52% 47%;
+  --primary-foreground: 162 30% 7%;
+  --ring: 152 52% 47%;
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    min-height: 100dvh;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+  input,
+  button,
+  textarea,
+  select {
+    font: inherit;
+    color: inherit;
+  }
+  /* larger, comfortable touch targets on mobile by default */
+  button {
+    touch-action: manipulation;
+  }
+}
+
+@layer utilities {
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+  .safe-bottom {
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  }
+}
+
+/*
+ * Card entrance. Starts fully visible and only *adds* a rise-in when motion is
+ * allowed — so content is never hidden if the animation can't run
+ * (backgrounded tab, reduced-motion, no JS).
+ */
+@keyframes card-rise {
+  from {
+    transform: translateY(10px);
+  }
+  to {
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .card-in {
+    animation: card-rise 0.3s ease-out both;
+  }
+}

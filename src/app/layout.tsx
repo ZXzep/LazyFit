@@ -1,0 +1,42 @@
+import type { Metadata, Viewport } from "next";
+import { Noto_Sans_Thai } from "next/font/google";
+import { Providers } from "@/components/providers";
+import "./globals.css";
+
+const fontSans = Noto_Sans_Thai({
+  subsets: ["thai", "latin"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+export const metadata: Metadata = {
+  title: "LazyFit — ลดน้ำหนักแบบขี้เกียจ",
+  description:
+    "ติดตามมื้ออาหารและการเบิร์นแบบยืดหยุ่น 80/20 ให้ AI ช่วยประเมินแคลอรี ไม่ต้องนับให้ปวดหัว",
+  manifest: "/manifest.webmanifest",
+  applicationName: "LazyFit",
+  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "LazyFit" },
+  formatDetection: { telephone: false },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0d1512" },
+  ],
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="th" suppressHydrationWarning className={fontSans.variable}>
+      <body className="font-sans antialiased">
+        <Providers>{children}</Providers>
+      </body>
+    </html>
+  );
+}

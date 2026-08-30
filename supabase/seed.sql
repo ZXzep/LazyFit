@@ -1,0 +1,37 @@
+-- ============================================================================
+--  Seed data — runs automatically on `supabase db reset` (local only)
+-- ============================================================================
+--  Auth users can't be created with plain SQL in a portable way, so the
+--  easiest local flow is:
+--    1. supabase start
+--    2. sign in through the app with a magic link
+--       (open the inbox at  http://127.0.0.1:54324  to click the link)
+--    3. the handle_new_user() trigger creates your profile row automatically
+--
+--  Once you know your user id you can uncomment + adjust the demo rows below
+--  and re-run `supabase db reset` to get a pre-populated dashboard.
+-- ============================================================================
+
+-- do $$
+-- declare
+--   uid uuid := 'PASTE-YOUR-AUTH-USER-ID-HERE';
+-- begin
+--   update public.profiles
+--      set display_name = 'ทดสอบ', daily_calorie_target = 1700, goal_weight_kg = 62
+--    where id = uid;
+--
+--   insert into public.meals (user_id, eaten_at, food_name, calories, protein_g, carbs_g, fat_g, meal_type, source)
+--   values
+--     (uid, now() - interval '5 hours', 'ข้าวไข่เจียวหมูสับ', 520, 22, 60, 22, 'normal', 'ai_text'),
+--     (uid, now() - interval '1 hour',  'ชานมไข่มุก',        380,  6, 62,  9, 'cheat',  'ai_text');
+--
+--   insert into public.workouts (user_id, performed_at, activity, duration_min, calories_burned)
+--   values (uid, now() - interval '3 hours', 'stepper', 20, 74);
+--
+--   insert into public.weight_logs (user_id, logged_on, weight_kg)
+--   values
+--     (uid, current_date - 14, 68.5),
+--     (uid, current_date - 7,  67.9),
+--     (uid, current_date,      67.4)
+--   on conflict (user_id, logged_on) do update set weight_kg = excluded.weight_kg;
+-- end $$;
