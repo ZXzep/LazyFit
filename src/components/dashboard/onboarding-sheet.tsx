@@ -26,14 +26,18 @@ export interface OnboardingResult {
 
 export function OnboardingSheet({
   defaultName,
+  skipNameStep = false,
   onDone,
 }: {
   defaultName: string;
+  /** true when the name was already chosen at signup — jump straight to body stats */
+  skipNameStep?: boolean;
   onDone: (result: OnboardingResult) => void;
 }) {
-  const [step, setStep] = useState<0 | 1>(0);
+  const knownName = defaultName && defaultName !== "เพื่อน" ? defaultName : "";
+  const [step, setStep] = useState<0 | 1>(skipNameStep && knownName ? 1 : 0);
 
-  const [name, setName] = useState(defaultName === "เพื่อน" ? "" : defaultName);
+  const [name, setName] = useState(knownName);
   const [sex, setSex] = useState<Sex | null>(null);
   const [age, setAge] = useState("");
   const [height, setHeight] = useState("");

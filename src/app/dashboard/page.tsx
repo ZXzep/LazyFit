@@ -52,6 +52,7 @@ export default async function DashboardPage() {
   return (
     <DashboardClient
       userName={profile?.display_name ?? "เพื่อน"}
+      nameConfirmed={Boolean(user.user_metadata?.full_name || user.user_metadata?.name)}
       profile={profile}
       today={today}
       weekStart={weekStart}
