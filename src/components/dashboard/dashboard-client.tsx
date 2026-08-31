@@ -251,7 +251,7 @@ export function DashboardClient({
         </div>
       </header>
 
-      <main aria-busy={busy} className="px-4 pb-24 pt-5">
+      <main aria-busy={busy} className="px-4 pb-28 pt-5">
         {busy ? <div className="fixed inset-x-0 top-0 z-[60] mx-auto h-1 max-w-md overflow-hidden bg-primary/20"><span className="loading-bar block h-full w-1/2 bg-primary-strong" /></div> : null}
         <div className="mb-5">
           <p className="text-sm text-muted-foreground">{TAB_META[activeTab].subtitle}</p>
@@ -337,9 +337,9 @@ export function DashboardClient({
 
       <nav
         aria-label="เมนูหลัก"
-        className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md border-t border-border/70 bg-background/92 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl"
+        className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))]"
       >
-        <div className="flex items-center justify-around">
+        <div className="flex items-end justify-around rounded-[26px] border border-border/70 bg-background/95 px-1.5 pb-2 pt-1.5 shadow-[0_12px_34px_hsl(var(--foreground)/0.14)] backdrop-blur-xl">
           <TabButton tab="home" activeTab={activeTab} onSelect={setActiveTab} icon={Home} />
           <TabButton tab="food" activeTab={activeTab} onSelect={setActiveTab} icon={Utensils} />
           <TabButton tab="workout" activeTab={activeTab} onSelect={setActiveTab} icon={Dumbbell} />
@@ -372,17 +372,24 @@ function TabButton({
       aria-label={TAB_META[tab].label}
       aria-current={active ? "page" : undefined}
       onClick={() => onSelect(tab)}
-      className="flex min-h-12 flex-1 items-center justify-center py-1"
+      className="flex flex-1 flex-col items-center gap-1"
     >
+      {/* icon: active one lifts out of the bar as a round badge with a ring "notch" */}
       <span
-        className={`inline-flex items-center gap-1.5 rounded-full text-[13px] font-semibold transition-all duration-200 ${
+        className={`flex items-center justify-center rounded-full transition-all duration-300 ease-out ${
           active
-            ? "translate-y-0.5 bg-primary px-3.5 py-2 text-primary-foreground shadow-[inset_0_3px_7px_hsl(var(--primary-strong)/0.55),inset_0_-1px_0_hsl(0_0%_100%/0.2)]"
-            : "p-2 text-muted-foreground active:scale-95"
+            ? "size-12 -translate-y-5 bg-primary text-primary-foreground shadow-[0_10px_20px_hsl(var(--primary)/0.45)] ring-[6px] ring-background"
+            : "size-9 text-muted-foreground active:scale-90"
         }`}
       >
         <Icon className="size-5" strokeWidth={active ? 2.6 : 2} />
-        {active && <span className="whitespace-nowrap">{TAB_META[tab].label}</span>}
+      </span>
+      <span
+        className={`-mt-3 text-[11px] font-semibold transition-colors ${
+          active ? "text-primary-strong" : "text-muted-foreground"
+        }`}
+      >
+        {TAB_META[tab].label}
       </span>
     </button>
   );
