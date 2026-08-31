@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import Image from "next/image";
-import { Activity, ChartNoAxesCombined, Dumbbell, Home, Plus, Sparkles, Utensils } from "lucide-react";
+import { ChartNoAxesCombined, Dumbbell, Home, Sparkles, Utensils, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import type {
   ActivityRef,
@@ -251,7 +251,7 @@ export function DashboardClient({
         </div>
       </header>
 
-      <main aria-busy={busy} className="px-4 pb-32 pt-5">
+      <main aria-busy={busy} className="px-4 pb-24 pt-5">
         {busy ? <div className="fixed inset-x-0 top-0 z-[60] mx-auto h-1 max-w-md overflow-hidden bg-primary/20"><span className="loading-bar block h-full w-1/2 bg-primary-strong" /></div> : null}
         <div className="mb-5">
           <p className="text-sm text-muted-foreground">{TAB_META[activeTab].subtitle}</p>
@@ -337,25 +337,15 @@ export function DashboardClient({
 
       <nav
         aria-label="เมนูหลัก"
-        className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md border-t border-border/70 bg-background/92 px-3 pb-[max(0.65rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl"
+        className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md border-t border-border/70 bg-background/92 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl"
       >
-        <div className="grid grid-cols-5 gap-1">
+        <div className="flex items-center justify-around">
           <TabButton tab="home" activeTab={activeTab} onSelect={setActiveTab} icon={Home} />
           <TabButton tab="food" activeTab={activeTab} onSelect={setActiveTab} icon={Utensils} />
-          <span aria-hidden="true" />
           <TabButton tab="workout" activeTab={activeTab} onSelect={setActiveTab} icon={Dumbbell} />
           <TabButton tab="progress" activeTab={activeTab} onSelect={setActiveTab} icon={ChartNoAxesCombined} />
         </div>
       </nav>
-
-      <button
-        type="button"
-        aria-label="บันทึกอาหาร"
-        onClick={() => setActiveTab("food")}
-        className="fixed bottom-[max(1.15rem,env(safe-area-inset-bottom))] left-1/2 z-50 flex size-14 -translate-x-1/2 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_8px_24px_hsl(var(--primary)/0.45)] transition-transform active:scale-95"
-      >
-        <Plus className="size-6" strokeWidth={2.5} />
-      </button>
 
       {showOnboarding && (
         <OnboardingSheet defaultName={userName} onDone={handleOnboardingDone} />
@@ -373,22 +363,27 @@ function TabButton({
   tab: AppTab;
   activeTab: AppTab;
   onSelect: (tab: AppTab) => void;
-  icon: typeof Activity;
+  icon: LucideIcon;
 }) {
   const active = tab === activeTab;
   return (
     <button
       type="button"
+      aria-label={TAB_META[tab].label}
       aria-current={active ? "page" : undefined}
       onClick={() => onSelect(tab)}
-      className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl text-[11px] font-medium transition-colors ${
-        active ? "text-foreground" : "text-muted-foreground active:bg-muted"
-      }`}
+      className="flex min-h-12 flex-1 items-center justify-center py-1"
     >
-      <span className={`flex size-8 items-center justify-center rounded-xl ${active ? "bg-primary" : ""}`}>
-        <Icon className="size-5" strokeWidth={active ? 2.5 : 2} />
+      <span
+        className={`inline-flex items-center gap-1.5 rounded-full text-[13px] font-semibold transition-all duration-200 ${
+          active
+            ? "translate-y-0.5 bg-primary px-3.5 py-2 text-primary-foreground shadow-[inset_0_3px_7px_hsl(var(--primary-strong)/0.55),inset_0_-1px_0_hsl(0_0%_100%/0.2)]"
+            : "p-2 text-muted-foreground active:scale-95"
+        }`}
+      >
+        <Icon className="size-5" strokeWidth={active ? 2.6 : 2} />
+        {active && <span className="whitespace-nowrap">{TAB_META[tab].label}</span>}
       </span>
-      <span>{TAB_META[tab].label}</span>
     </button>
   );
 }
