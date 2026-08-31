@@ -23,6 +23,7 @@ import {
 } from "@/app/dashboard/actions";
 import { greetingTH } from "@/lib/date";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SignOutButton } from "@/components/sign-out-button";
 import { CaloricBalanceCard } from "./caloric-balance-card";
 import { MealHistory } from "./meal-history";
 import { OnboardingSheet } from "./onboarding-sheet";
@@ -253,11 +254,14 @@ export function DashboardClient({
   return (
     <div className="mx-auto w-full max-w-md px-4 pt-[max(0.75rem,env(safe-area-inset-top))] safe-bottom">
       <header className="flex items-center justify-between py-3">
-        <div>
+        <div className="min-w-0">
           <p className="text-sm text-muted-foreground">{greetingTH(tz)} 👋</p>
-          <h1 className="text-xl font-bold leading-tight">{name}</h1>
+          <h1 className="truncate text-xl font-bold leading-tight">{name}</h1>
         </div>
-        <ThemeToggle />
+        <div className="flex shrink-0 items-center gap-2">
+          <ThemeToggle />
+          <SignOutButton />
+        </div>
       </header>
 
       <div className="mt-1 space-y-4">
