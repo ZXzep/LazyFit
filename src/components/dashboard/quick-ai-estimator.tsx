@@ -12,7 +12,7 @@ import { fmt } from "@/lib/utils";
 const MEAL_BADGE: Record<MealType, { label: string; cls: string }> = {
   clean: { label: "Clean 🥗", cls: "bg-primary/20 text-primary-strong" },
   normal: { label: "ปกติ 🍚", cls: "bg-muted text-muted-foreground" },
-  cheat: { label: "Cheat 🍔", cls: "bg-rose-500/10 text-rose-600 dark:text-rose-400" },
+  cheat: { label: "Cheat 🍔", cls: "bg-rose-500/10 text-rose-600" },
 };
 
 interface SelectedImage {

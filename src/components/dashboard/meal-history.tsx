@@ -9,7 +9,7 @@ import type { Meal, MealType } from "@/types/db";
 const BADGE: Record<MealType, { label: string; cls: string }> = {
   clean: { label: "clean", cls: "bg-primary/20 text-primary-strong" },
   normal: { label: "ปกติ", cls: "bg-muted text-muted-foreground" },
-  cheat: { label: "cheat", cls: "bg-rose-500/10 text-rose-600 dark:text-rose-400" },
+  cheat: { label: "cheat", cls: "bg-rose-500/10 text-rose-600" },
 };
 
 export function MealHistory({

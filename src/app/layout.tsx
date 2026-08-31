@@ -21,15 +21,13 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#bef54e" },
-    { media: "(prefers-color-scheme: dark)", color: "#0d1512" },
-  ],
+  themeColor: "#bef54e",
+  colorScheme: "light",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="th" suppressHydrationWarning>
+    <html lang="th">
       <body className="font-sans antialiased">
         <Providers>{children}</Providers>
       </body>

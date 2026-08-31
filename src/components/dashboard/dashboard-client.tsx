@@ -24,7 +24,6 @@ import {
   logWorkout,
 } from "@/app/dashboard/actions";
 import { greetingTH } from "@/lib/date";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { SignOutButton } from "@/components/sign-out-button";
 import { CaloricBalanceCard } from "./caloric-balance-card";
 import { MealHistory } from "./meal-history";
@@ -247,7 +246,6 @@ export function DashboardClient({
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
-            <ThemeToggle />
             <SignOutButton />
           </div>
         </div>

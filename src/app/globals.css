@@ -18,20 +18,8 @@
   --primary-foreground: 76 23% 8%;
   --primary-strong: 76 100% 25%;
   --ring: 77 89% 63%;
-}
 
-.dark {
-  --background: 76 23% 6%;
-  --foreground: 76 35% 96%;
-  --card: 76 18% 9%;
-  --card-foreground: 76 35% 96%;
-  --muted: 76 12% 15%;
-  --muted-foreground: 76 8% 63%;
-  --border: 76 12% 20%;
-  --primary: 77 89% 63%;
-  --primary-foreground: 76 23% 8%;
-  --primary-strong: 77 89% 63%;
-  --ring: 77 89% 63%;
+  color-scheme: light;
 }
 
 @layer base {
