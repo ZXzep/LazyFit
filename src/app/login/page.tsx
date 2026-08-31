@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useRef, useState } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { say } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
@@ -51,7 +51,7 @@ export default function LoginPage() {
       }
 
       if (!result.data.session) {
-        toast.success("สร้างบัญชีแล้ว — เปิดอีเมลยืนยันก่อนเข้าสู่ระบบ");
+        say.accountCreated();
         setMode("signin");
         return;
       }
@@ -78,7 +78,6 @@ export default function LoginPage() {
             ? err.message
             : "ไม่สำเร็จ ลองอีกครั้ง";
       setAuthError(message);
-      toast.error(message);
     } finally {
       setLoading(false);
     }

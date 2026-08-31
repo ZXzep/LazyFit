@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import { Camera, Loader2, Sparkles, X } from "lucide-react";
-import { toast } from "sonner";
+import { say } from "@/lib/toast";
 import type { LogMealInput, MealEstimate, MealType } from "@/types/db";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,7 +39,7 @@ export function QuickAiEstimator({
     e.target.value = "";
     if (!file) return;
     if (file.size > 4 * 1024 * 1024) {
-      toast.error("รูปใหญ่เกินไป (เกิน 4MB) ลองถ่ายใหม่หรือย่อรูป");
+      say.hint("รูปใหญ่ไป (เกิน 4MB) ถ่ายใหม่หรือย่อก่อนนะ");
       return;
     }
     const dataUrl = await readAsDataUrl(file);
@@ -49,7 +49,7 @@ export function QuickAiEstimator({
 
   async function handleEstimate() {
     if (!text.trim() && !image) {
-      toast.error("พิมพ์ชื่ออาหาร หรือแนบรูปก่อนนะ");
+      say.hint("พิมพ์ชื่ออาหารหรือแนบรูปก่อนนะ");
       return;
     }
     setEstimating(true);
@@ -68,7 +68,7 @@ export function QuickAiEstimator({
       if (!res.ok) throw new Error(data.message || "ประเมินไม่สำเร็จ");
       setResult(data);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
+      say.oops(err instanceof Error ? err.message : undefined);
     } finally {
       setEstimating(false);
     }
@@ -89,12 +89,12 @@ export function QuickAiEstimator({
         source: image ? "ai_image" : "ai_text",
         raw_input: text.trim() || (image ? "photo" : undefined),
       });
-      toast.success("บันทึกมื้อนี้แล้ว 🎉");
+      say.mealLogged();
       setText("");
       setImage(null);
       setResult(null);
     } catch {
-      toast.error("บันทึกไม่สำเร็จ ลองอีกครั้ง");
+      say.oops();
     }
   }
 

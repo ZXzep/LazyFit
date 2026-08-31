@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { ChartNoAxesCombined, Dumbbell, Home, Sparkles, Utensils, type LucideIcon } from "lucide-react";
-import { toast } from "sonner";
+import { say } from "@/lib/toast";
 import type {
   ActivityRef,
   LogMealInput,
@@ -132,7 +132,7 @@ export function DashboardClient({
       } catch {
         setMeals(prevMeals);
         setWeek(prevWeek);
-        toast.error("ลบไม่สำเร็จ");
+        say.oops();
       }
     },
     [meals, week, today],
@@ -150,11 +150,12 @@ export function DashboardClient({
         });
         setWorkouts((prev) => [row, ...prev]);
         setWeek((prev) => bumpDay(prev, today, "calories_out", row.calories_burned));
-        toast.success(
-          `${activity.emoji ?? "🔥"} ${activity.label} ${minutes} นาที · เบิร์น ${row.calories_burned} kcal`,
+        say.workoutLogged(
+          `${activity.emoji ?? "🔥"} ${activity.label} ${minutes} นาที`,
+          row.calories_burned,
         );
       } catch {
-        toast.error("บันทึกไม่สำเร็จ ลองอีกครั้ง");
+        say.oops();
       } finally {
         setBusy(false);
       }
@@ -175,7 +176,7 @@ export function DashboardClient({
       } catch {
         setWorkouts(prevWorkouts);
         setWeek(prevWeek);
-        toast.error("ลบไม่สำเร็จ");
+        say.oops();
       }
     },
     [workouts, week, today],
@@ -190,7 +191,7 @@ export function DashboardClient({
         await deleteActivity(id);
       } catch {
         setActivities(prev);
-        toast.error("ลบไม่สำเร็จ");
+        say.oops();
       }
     },
     [activities],
@@ -208,9 +209,9 @@ export function DashboardClient({
             a.logged_on.localeCompare(b.logged_on),
           );
         });
-        toast.success("บันทึกน้ำหนักแล้ว 👍");
+        say.weightLogged();
       } catch {
-        toast.error("บันทึกไม่สำเร็จ ลองอีกครั้ง");
+        say.oops();
       } finally {
         setBusy(false);
       }

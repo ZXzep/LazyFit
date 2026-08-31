@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { say } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { ACTIVITY_EMOJI_CHOICES, INTENSITY } from "@/lib/activities";
 import type { UserActivity } from "@/types/db";
@@ -32,7 +32,7 @@ export function AddActivityForm({
       const row = await onAdd({ name: name.trim(), emoji, met });
       onDone?.(row);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "เพิ่มไม่สำเร็จ");
+      say.oops(e instanceof Error ? e.message : undefined);
       setSaving(false);
     }
   }

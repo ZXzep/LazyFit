@@ -26,7 +26,7 @@ export function SignOutButton() {
       title="ออกจากระบบ"
       onClick={signOut}
       disabled={loading}
-      className="flex size-11 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors active:scale-95 disabled:opacity-50"
+      className="flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors active:scale-95 disabled:opacity-50"
     >
       <LogOut className="size-5" />
     </button>

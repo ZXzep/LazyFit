@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Loader2, Sparkles } from "lucide-react";
 import Image from "next/image";
-import { toast } from "sonner";
+import { say } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { saveOnboarding } from "@/app/dashboard/actions";
 import {
@@ -90,9 +90,9 @@ export function OnboardingSheet({
         weight_kg: parsed.w,
         display_name: name.trim(),
       });
-      toast.success(`ยินดีต้อนรับ ${name.trim()}! เป้า ${res.daily_calorie_target.toLocaleString()} kcal/วัน 🎯`);
+      say.welcome(name.trim(), res.daily_calorie_target);
     } catch {
-      toast.error("บันทึกไม่สำเร็จ ลองอีกครั้ง");
+      say.oops();
       setSaving(false);
     }
   }

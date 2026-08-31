@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Plus, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { say } from "@/lib/toast";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AddActivityForm } from "@/components/dashboard/add-activity-form";
@@ -56,9 +56,9 @@ function ProfileSection({ profile }: { profile: Profile }) {
         daily_calorie_target: Number(target) || undefined,
         weekly_cheat_quota: Number.isFinite(Number(quota)) ? Number(quota) : undefined,
       });
-      toast.success("บันทึกแล้ว");
+      say.settingsSaved();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "บันทึกไม่สำเร็จ");
+      say.oops(e instanceof Error ? e.message : undefined);
     } finally {
       setSaving(false);
     }
@@ -121,7 +121,7 @@ function ActivitySection({
     const next = new Set(keys);
     if (next.has(key)) {
       if (next.size === 1 && customs.length === 0) {
-        toast.error("ต้องเปิดไว้อย่างน้อย 1 อย่าง");
+        say.hint("เปิดไว้อย่างน้อย 1 อย่างนะ ไม่งั้นไม่มีให้เลือก");
         return;
       }
       next.delete(key);
@@ -134,7 +134,7 @@ function ActivitySection({
       await setActivityKeys([...next]);
     } catch {
       setKeys(keys);
-      toast.error("บันทึกไม่สำเร็จ");
+      say.oops();
     } finally {
       setPending(false);
     }
@@ -145,9 +145,10 @@ function ActivitySection({
     setCustoms((c) => c.filter((a) => a.id !== id));
     try {
       await deleteActivity(id);
+      say.removed();
     } catch {
       setCustoms(snapshot);
-      toast.error("ลบไม่สำเร็จ");
+      say.oops();
     }
   }
 
@@ -211,7 +212,7 @@ function ActivitySection({
               onDone={(row) => {
                 setCustoms((c) => [...c, row]);
                 setAdding(false);
-                toast.success(`เพิ่ม ${row.emoji ?? ""} ${row.name} แล้ว`);
+                say.activityAdded(row.name);
               }}
             />
           </div>
@@ -248,13 +249,13 @@ function Switch({
       aria-checked={on}
       disabled={disabled}
       onClick={onToggle}
-      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
+      className={`flex h-6 w-11 shrink-0 items-center rounded-full px-0.5 transition-colors disabled:opacity-50 ${
         on ? "bg-primary" : "bg-muted"
       }`}
     >
       <span
-        className={`absolute top-0.5 size-5 rounded-full bg-background shadow transition-transform ${
-          on ? "translate-x-[22px]" : "translate-x-0.5"
+        className={`size-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+          on ? "translate-x-5" : "translate-x-0"
         }`}
       />
     </button>
