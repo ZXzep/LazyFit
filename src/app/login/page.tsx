@@ -17,7 +17,6 @@ export default function LoginPage() {
   const getSupabase = () => (supabaseRef.current ??= createClient());
 
   const [mode, setMode] = useState<Mode>("signin");
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -27,25 +26,17 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (isSignup && name.trim().length === 0) {
-      toast.error("ใส่ชื่อเล่นด้วยนะ");
-      return;
-    }
     setLoading(true);
 
     const supabase = getSupabase();
-    const emailTrim = email.trim();
+    const creds = { email: email.trim(), password };
 
     try {
       if (!isSignup) {
-        const { error } = await supabase.auth.signInWithPassword({ email: emailTrim, password });
+        const { error } = await supabase.auth.signInWithPassword(creds);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase.auth.signUp({
-          email: emailTrim,
-          password,
-          options: { data: { full_name: name.trim() } },
-        });
+        const { data, error } = await supabase.auth.signUp(creds);
         if (error) throw error;
         if (!data.session) {
           toast.success("สร้างบัญชีแล้ว — เปิดอีเมลยืนยันก่อนเข้าสู่ระบบ");
@@ -78,19 +69,6 @@ export default function LoginPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-3">
-        {isSignup && (
-          <input
-            type="text"
-            required
-            autoComplete="nickname"
-            maxLength={40}
-            placeholder="ชื่อเล่น (ให้เราเรียกคุณ)"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="h-12 w-full rounded-xl border border-border bg-background px-4 text-base outline-none transition-colors focus:border-primary"
-          />
-        )}
-
         <input
           type="email"
           required

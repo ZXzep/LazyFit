@@ -34,7 +34,6 @@ import { WorkoutCard } from "./workout-card";
 
 interface Props {
   userName: string;
-  nameConfirmed: boolean;
   profile: Profile | null;
   today: string;
   weekStart: string;
@@ -47,7 +46,6 @@ interface Props {
 
 export function DashboardClient({
   userName,
-  nameConfirmed,
   profile,
   today,
   initialMeals,
@@ -273,11 +271,7 @@ export function DashboardClient({
       </div>
 
       {showOnboarding && (
-        <OnboardingSheet
-          defaultName={userName}
-          skipNameStep={nameConfirmed}
-          onDone={handleOnboardingDone}
-        />
+        <OnboardingSheet defaultName={userName} onDone={handleOnboardingDone} />
       )}
 
       <p className="mt-8 text-center text-xs text-muted-foreground">
