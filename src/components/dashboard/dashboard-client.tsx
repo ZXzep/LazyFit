@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { ChartNoAxesCombined, Dumbbell, Home, Sparkles, Utensils, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -43,6 +43,13 @@ const TAB_META: Record<AppTab, { label: string; title: string; subtitle: string 
   progress: { label: "สถิติ", title: "ความคืบหน้า", subtitle: "ดูแนวโน้ม ไม่ตัดสินตัวเองรายวัน" },
 };
 
+const TABS: { tab: AppTab; icon: LucideIcon }[] = [
+  { tab: "home", icon: Home },
+  { tab: "food", icon: Utensils },
+  { tab: "workout", icon: Dumbbell },
+  { tab: "progress", icon: ChartNoAxesCombined },
+];
+
 interface Props {
   userName: string;
   profile: Profile | null;
@@ -76,6 +83,7 @@ export function DashboardClient({
   const [showOnboarding, setShowOnboarding] = useState(!profile?.onboarded_at);
   const [busy, setBusy] = useState(false);
   const [activeTab, setActiveTab] = useState<AppTab>("home");
+  const activeIndex = Math.max(0, TABS.findIndex((t) => t.tab === activeTab));
 
   const cheatQuota = profile?.weekly_cheat_quota ?? 3;
   const tz = profile?.timezone ?? "Asia/Bangkok";
@@ -335,17 +343,7 @@ export function DashboardClient({
         </div>
       </main>
 
-      <nav
-        aria-label="เมนูหลัก"
-        className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))]"
-      >
-        <div className="flex items-end justify-around rounded-[26px] border border-border/70 bg-background/95 px-1.5 pb-2 pt-1.5 shadow-[0_12px_34px_hsl(var(--foreground)/0.14)] backdrop-blur-xl">
-          <TabButton tab="home" activeTab={activeTab} onSelect={setActiveTab} icon={Home} />
-          <TabButton tab="food" activeTab={activeTab} onSelect={setActiveTab} icon={Utensils} />
-          <TabButton tab="workout" activeTab={activeTab} onSelect={setActiveTab} icon={Dumbbell} />
-          <TabButton tab="progress" activeTab={activeTab} onSelect={setActiveTab} icon={ChartNoAxesCombined} />
-        </div>
-      </nav>
+      <BottomNav activeTab={activeTab} activeIndex={activeIndex} onSelect={setActiveTab} />
 
       {showOnboarding && (
         <OnboardingSheet defaultName={userName} onDone={handleOnboardingDone} />
@@ -354,44 +352,125 @@ export function DashboardClient({
   );
 }
 
-function TabButton({
-  tab,
+// ---------------------------------------------------------------------------
+//  Bottom navigation — SVG bar whose top edge notches around the raised
+//  active-tab circle. Height is fixed so switching tabs never resizes it.
+// ---------------------------------------------------------------------------
+const NAV_H = 62;
+
+function navPath(w: number, h: number, cx: number): string {
+  const r = 22; // corner radius
+  const nr = 30; // notch half-width
+  const nd = 20; // notch depth
+  const l = Math.max(r, cx - nr - 6);
+  const rt = Math.min(w - r, cx + nr + 6);
+  return [
+    `M ${r} 0`,
+    `L ${l} 0`,
+    `C ${cx - nr} 0 ${cx - nr + 4} ${nd} ${cx} ${nd}`,
+    `C ${cx + nr - 4} ${nd} ${cx + nr} 0 ${rt} 0`,
+    `L ${w - r} 0`,
+    `A ${r} ${r} 0 0 1 ${w} ${r}`,
+    `L ${w} ${h - r}`,
+    `A ${r} ${r} 0 0 1 ${w - r} ${h}`,
+    `L ${r} ${h}`,
+    `A ${r} ${r} 0 0 1 0 ${h - r}`,
+    `L 0 ${r}`,
+    `A ${r} ${r} 0 0 1 ${r} 0`,
+    `Z`,
+  ].join(" ");
+}
+
+function BottomNav({
   activeTab,
+  activeIndex,
   onSelect,
-  icon: Icon,
 }: {
-  tab: AppTab;
   activeTab: AppTab;
+  activeIndex: number;
   onSelect: (tab: AppTab) => void;
-  icon: LucideIcon;
 }) {
-  const active = tab === activeTab;
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [w, setW] = useState(0);
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const measure = () => setW(el.clientWidth);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const cx = w ? ((activeIndex + 0.5) / TABS.length) * w : 0;
+  const ActiveIcon = TABS[activeIndex].icon;
+
   return (
-    <button
-      type="button"
-      aria-label={TAB_META[tab].label}
-      aria-current={active ? "page" : undefined}
-      onClick={() => onSelect(tab)}
-      className="flex flex-1 flex-col items-center gap-1"
+    <nav
+      aria-label="เมนูหลัก"
+      className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))]"
     >
-      {/* icon: active one lifts out of the bar as a round badge with a ring "notch" */}
-      <span
-        className={`flex items-center justify-center rounded-full transition-all duration-300 ease-out ${
-          active
-            ? "size-12 -translate-y-5 bg-primary text-primary-foreground shadow-[0_10px_20px_hsl(var(--primary)/0.45)] ring-[6px] ring-background"
-            : "size-9 text-muted-foreground active:scale-90"
-        }`}
-      >
-        <Icon className="size-5" strokeWidth={active ? 2.6 : 2} />
-      </span>
-      <span
-        className={`-mt-3 text-[11px] font-semibold transition-colors ${
-          active ? "text-primary-strong" : "text-muted-foreground"
-        }`}
-      >
-        {TAB_META[tab].label}
-      </span>
-    </button>
+      <div ref={wrapRef} className="relative" style={{ height: NAV_H }}>
+        {w > 0 && (
+          <>
+            <svg
+              width={w}
+              height={NAV_H}
+              viewBox={`0 0 ${w} ${NAV_H}`}
+              className="absolute inset-0 drop-shadow-[0_12px_30px_hsl(var(--foreground)/0.16)]"
+              aria-hidden
+            >
+              <path
+                d={navPath(w, NAV_H, cx)}
+                style={{
+                  d: `path("${navPath(w, NAV_H, cx)}")`,
+                  transition: "d 0.32s cubic-bezier(0.4, 0, 0.2, 1)",
+                }}
+                fill="hsl(var(--background))"
+                stroke="hsl(var(--border))"
+                strokeWidth={1.25}
+              />
+            </svg>
+
+            <span
+              style={{ left: cx, transition: "left 0.32s cubic-bezier(0.4, 0, 0.2, 1)" }}
+              className="pointer-events-none absolute top-[-21px] grid size-[50px] -translate-x-1/2 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_22px_hsl(var(--primary)/0.5)]"
+            >
+              <ActiveIcon className="size-[21px]" strokeWidth={2.6} />
+            </span>
+          </>
+        )}
+
+        <div className="relative flex h-full">
+          {TABS.map(({ tab, icon: Icon }) => {
+            const active = tab === activeTab;
+            return (
+              <button
+                key={tab}
+                type="button"
+                aria-label={TAB_META[tab].label}
+                aria-current={active ? "page" : undefined}
+                onClick={() => onSelect(tab)}
+                className="flex flex-1 flex-col items-center justify-end gap-1 pb-2"
+              >
+                <Icon
+                  className={`size-5 transition-opacity ${active ? "opacity-0" : "text-muted-foreground"}`}
+                  strokeWidth={2}
+                />
+                <span
+                  className={`text-[11px] font-semibold transition-colors ${
+                    active ? "text-primary-strong" : "text-muted-foreground"
+                  }`}
+                >
+                  {TAB_META[tab].label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </nav>
   );
 }
 
