@@ -20,6 +20,7 @@ export interface Profile {
   birth_year: number | null;
   activity_level: ActivityLevel;
   goal: Goal;
+  activity_keys: string[];
   onboarded_at: string | null;
   created_at: string;
   updated_at: string;

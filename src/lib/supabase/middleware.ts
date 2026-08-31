@@ -1,7 +1,7 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PROTECTED_PREFIXES = ["/dashboard"];
+const PROTECTED_PREFIXES = ["/dashboard", "/settings"];
 const AUTH_ROUTES = ["/login"];
 
 /** Refreshes the Supabase session on every request and guards protected routes. */

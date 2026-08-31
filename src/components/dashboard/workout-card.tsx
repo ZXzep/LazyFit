@@ -1,17 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
-import { Check, Flame, Loader2, Pause, Play, Plus, Trash2, X } from "lucide-react";
-import { toast } from "sonner";
+import { Check, Flame, Pause, Play, Settings2, Trash2, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DURATION_PRESETS } from "@/lib/calories";
-import {
-  ACTIVITY_EMOJI_CHOICES,
-  BUILTIN_ACTIVITIES,
-  INTENSITY,
-} from "@/lib/activities";
+import { BUILTIN_ACTIVITIES } from "@/lib/activities";
 import { clockLabel } from "@/lib/date";
 import { useWorkoutTimer } from "@/hooks/use-workout-timer";
 import type { ActivityRef, UserActivity, Workout } from "@/types/db";
@@ -33,32 +29,34 @@ export function WorkoutCard({
   busy,
   workouts,
   activities,
+  activityKeys,
   tz,
   onLog,
   onDeleteWorkout,
-  onAddActivity,
   onDeleteActivity,
 }: {
   streak: number;
   busy: boolean;
   workouts: Workout[];
   activities: UserActivity[];
+  activityKeys: string[];
   tz: string;
   onLog: (payload: { minutes: number; activity: ActivityRef }) => void;
   onDeleteWorkout: (id: string) => void;
-  onAddActivity: (input: { name: string; emoji?: string; met: number }) => Promise<UserActivity>;
   onDeleteActivity: (id: string) => void;
 }) {
-  const options: ActivityRef[] = useMemo(
-    () => [
-      ...BUILTIN_ACTIVITIES.map((b) => ({ kind: "builtin" as const, key: b.key, label: b.label, emoji: b.emoji, met: b.met })),
+  const options: ActivityRef[] = useMemo(() => {
+    const enabled = new Set(activityKeys);
+    const builtins = BUILTIN_ACTIVITIES.filter((b) => enabled.has(b.key));
+    // never leave the picker empty
+    const base = builtins.length ? builtins : BUILTIN_ACTIVITIES.slice(0, 1);
+    return [
+      ...base.map((b) => ({ kind: "builtin" as const, key: b.key, label: b.label, emoji: b.emoji, met: b.met })),
       ...activities.map((a) => ({ kind: "custom" as const, id: a.id, label: a.name, emoji: a.emoji, met: Number(a.met) })),
-    ],
-    [activities],
-  );
+    ];
+  }, [activities, activityKeys]);
 
   const [selected, setSelected] = useState<ActivityRef>(options[0]);
-  const [adding, setAdding] = useState(false);
   const timer = useWorkoutTimer<ActivityRef>();
   const { active: timerActive, done: timerDone, activity: timerActivity, finish: timerFinish } = timer;
   const finishing = useRef(false);
@@ -140,36 +138,13 @@ export function WorkoutCard({
                 </button>
               );
             })}
-            <button
-              type="button"
-              onClick={() => setAdding((v) => !v)}
+            <Link
+              href="/settings"
               className="inline-flex items-center gap-1 rounded-full border border-dashed border-border px-2.5 py-1.5 text-sm text-muted-foreground"
             >
-              <Plus className="size-3.5" /> เพิ่ม
-            </button>
+              <Settings2 className="size-3.5" /> จัดการ
+            </Link>
           </div>
-
-          {adding && (
-            <AddActivityForm
-              busy={busy}
-              onCancel={() => setAdding(false)}
-              onAdd={async (input) => {
-                try {
-                  const row = await onAddActivity(input);
-                  setSelected({
-                    kind: "custom",
-                    id: row.id,
-                    label: row.name,
-                    emoji: row.emoji,
-                    met: Number(row.met),
-                  });
-                  setAdding(false);
-                } catch (e) {
-                  toast.error(e instanceof Error ? e.message : "เพิ่มไม่สำเร็จ");
-                }
-              }}
-            />
-          )}
 
           {/* duration presets */}
           <div className="mt-3 grid grid-cols-4 gap-2">
@@ -310,88 +285,3 @@ function TimerView({
   );
 }
 
-function AddActivityForm({
-  busy,
-  onAdd,
-  onCancel,
-}: {
-  busy: boolean;
-  onAdd: (input: { name: string; emoji?: string; met: number }) => Promise<void>;
-  onCancel: () => void;
-}) {
-  const [name, setName] = useState("");
-  const [emoji, setEmoji] = useState(ACTIVITY_EMOJI_CHOICES[0]);
-  const [intensityKey, setIntensityKey] = useState<(typeof INTENSITY)[number]["key"]>("moderate");
-  const [saving, setSaving] = useState(false);
-
-  const met = INTENSITY.find((i) => i.key === intensityKey)!.met;
-
-  return (
-    <div className="mt-3 rounded-2xl border border-border bg-muted/30 p-3">
-      <div className="flex gap-2">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-border bg-background text-lg">
-          {emoji}
-        </span>
-        <input
-          autoFocus
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="ชื่อกิจกรรม เช่น ฮูลาฮูป"
-          maxLength={30}
-          className="h-11 flex-1 rounded-xl border border-border bg-background px-3 text-base outline-none focus:border-primary"
-        />
-      </div>
-
-      <div className="mt-2 flex flex-wrap gap-1">
-        {ACTIVITY_EMOJI_CHOICES.map((e) => (
-          <button
-            key={e}
-            type="button"
-            onClick={() => setEmoji(e)}
-            className={`flex size-8 items-center justify-center rounded-lg text-base ${
-              emoji === e ? "bg-primary/15 ring-1 ring-primary" : "hover:bg-background"
-            }`}
-          >
-            {e}
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-2 grid grid-cols-3 gap-1.5">
-        {INTENSITY.map((i) => (
-          <button
-            key={i.key}
-            type="button"
-            onClick={() => setIntensityKey(i.key)}
-            className={`h-9 rounded-xl border text-sm transition-colors ${
-              intensityKey === i.key
-                ? "border-primary bg-primary/15 text-primary-strong"
-                : "border-border bg-background"
-            }`}
-          >
-            {i.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-3 flex gap-2">
-        <Button variant="ghost" size="sm" className="flex-1" onClick={onCancel}>
-          ยกเลิก
-        </Button>
-        <Button
-          size="sm"
-          className="flex-1"
-          disabled={busy || saving || name.trim().length === 0}
-          onClick={async () => {
-            setSaving(true);
-            await onAdd({ name: name.trim(), emoji, met });
-            setSaving(false);
-          }}
-        >
-          {saving ? <Loader2 className="size-4 animate-spin" /> : null}
-          เพิ่ม
-        </Button>
-      </div>
-    </div>
-  );
-}

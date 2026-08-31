@@ -15,7 +15,6 @@ import type {
   Workout,
 } from "@/types/db";
 import {
-  addActivity,
   deleteActivity,
   deleteMeal,
   deleteWorkout,
@@ -24,6 +23,7 @@ import {
   logWorkout,
 } from "@/app/dashboard/actions";
 import { greetingTH } from "@/lib/date";
+import { SettingsLink } from "@/components/settings-link";
 import { SignOutButton } from "@/components/sign-out-button";
 import { CaloricBalanceCard } from "./caloric-balance-card";
 import { MealHistory } from "./meal-history";
@@ -181,15 +181,6 @@ export function DashboardClient({
     [workouts, week, today],
   );
 
-  const handleAddActivity = useCallback(
-    async (input: { name: string; emoji?: string; met: number }) => {
-      const row = await addActivity(input);
-      setActivities((prev) => [...prev, row]);
-      toast.success(`เพิ่ม ${row.emoji ?? ""} ${row.name} แล้ว`);
-      return row;
-    },
-    [],
-  );
 
   const handleDeleteActivity = useCallback(
     async (id: string) => {
@@ -254,6 +245,7 @@ export function DashboardClient({
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
+            <SettingsLink />
             <SignOutButton />
           </div>
         </div>
@@ -321,10 +313,10 @@ export function DashboardClient({
               busy={busy}
               workouts={workouts}
               activities={activities}
+              activityKeys={profile?.activity_keys ?? ["stepper"]}
               tz={tz}
               onLog={handleLogWorkout}
               onDeleteWorkout={handleDeleteWorkout}
-              onAddActivity={handleAddActivity}
               onDeleteActivity={handleDeleteActivity}
             />
           ) : null}
