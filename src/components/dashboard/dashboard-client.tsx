@@ -361,19 +361,22 @@ const NAV_H = 62;
 const NOTCH_R = 30; // notch radius — circle is r24, leaves a ~6px ring
 const NOTCH_CY = 4; // notch / circle centre, y
 
-function navPath(w: number, h: number, cx: number): string {
+/**
+ * Bar outline with a cup notched into the top edge. The cup is drawn as a
+ * half-ellipse between `lx` and `rx` at depth `dep` — passing asymmetric rims
+ * + a squashed depth makes it slosh like liquid mid-transit.
+ */
+function navPath(w: number, h: number, lx: number, rx: number, dep: number): string {
   const r = 16; // outer corner radius
-  const R = NOTCH_R;
   const cy = NOTCH_CY;
   const bl = 8; // blend from the flat edge into the cup
-  const x1 = cx - R - bl;
-  const x2 = cx + R + bl;
+  const arcRx = (rx - lx) / 2;
   return [
     `M ${r} 0`,
-    `L ${x1} 0`,
-    `Q ${cx - R} 0 ${cx - R} ${cy}`, // ease flat edge down to a vertical tangent
-    `A ${R} ${R} 0 0 0 ${cx + R} ${cy}`, // deep round cup around the circle
-    `Q ${cx + R} 0 ${x2} 0`, // ease back up to the flat edge
+    `L ${(lx - bl).toFixed(2)} 0`,
+    `Q ${lx.toFixed(2)} 0 ${lx.toFixed(2)} ${cy}`,
+    `A ${arcRx.toFixed(2)} ${dep.toFixed(2)} 0 0 0 ${rx.toFixed(2)} ${cy}`,
+    `Q ${rx.toFixed(2)} 0 ${(rx + bl).toFixed(2)} 0`,
     `L ${w - r} 0`,
     `A ${r} ${r} 0 0 1 ${w} ${r}`,
     `L ${w} ${h - r}`,
@@ -412,8 +415,40 @@ function BottomNav({
   // cup always fits inside the bar (matters on narrow phones)
   const PAD = 18;
   const raw = w ? PAD + ((activeIndex + 0.5) * (w - PAD * 2)) / TABS.length : 0;
-  const cx = w ? Math.min(Math.max(raw, 16 + NOTCH_R + 8), w - 16 - NOTCH_R - 8) : 0;
+  const target = w ? Math.min(Math.max(raw, 16 + NOTCH_R + 8), w - 16 - NOTCH_R - 8) : 0;
   const ActiveIcon = TABS[activeIndex].icon;
+
+  /*
+   * Liquid transition: on a tab change the cup snaps to the destination but
+   * stretches wide + shallow toward the travel direction, then relaxes back
+   * to a deep round cup — like surface tension. Purely timeout + CSS driven
+   * (rAF is throttled on hidden tabs; this keeps working).
+   */
+  const prevRef = useRef(target);
+  const [pulse, setPulse] = useState(0); // signed 0..1: |mag| stretch, sign = direction
+
+  useEffect(() => {
+    const from = prevRef.current;
+    prevRef.current = target;
+    if (!from || !target || from === target) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const dir = Math.sign(target - from);
+    setPulse(dir);
+    const t1 = setTimeout(() => setPulse(dir * 0.4), 120);
+    const t2 = setTimeout(() => setPulse(0), 300);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [target]);
+
+  const mag = Math.abs(pulse);
+  const dir = Math.sign(pulse) || 1;
+  const lx = target - NOTCH_R - mag * (dir < 0 ? 36 : 10);
+  const rx = target + NOTCH_R + mag * (dir > 0 ? 36 : 10);
+  const dep = NOTCH_R - mag * 12;
+  const blobSx = 1 + mag * 0.16;
+  const blobSy = 1 - mag * 0.12;
 
   return (
     <nav
@@ -431,10 +466,10 @@ function BottomNav({
               aria-hidden
             >
               <path
-                d={navPath(w, NAV_H, cx)}
+                d={navPath(w, NAV_H, lx, rx, dep)}
                 style={{
-                  d: `path("${navPath(w, NAV_H, cx)}")`,
-                  transition: "d 0.32s cubic-bezier(0.4, 0, 0.2, 1)",
+                  d: `path("${navPath(w, NAV_H, lx, rx, dep)}")`,
+                  transition: "d 0.28s cubic-bezier(0.4, 0, 0.2, 1)",
                 }}
                 fill="hsl(var(--background))"
                 stroke="hsl(var(--border))"
@@ -443,8 +478,13 @@ function BottomNav({
             </svg>
 
             <span
-              style={{ left: cx, transition: "left 0.32s cubic-bezier(0.4, 0, 0.2, 1)" }}
-              className="pointer-events-none absolute top-[-20px] grid size-12 -translate-x-1/2 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_22px_hsl(var(--primary)/0.5)]"
+              style={{
+                left: target,
+                transform: `translateX(-50%) scale(${blobSx.toFixed(3)}, ${blobSy.toFixed(3)})`,
+                transition:
+                  "left 0.42s cubic-bezier(0.5, 1.3, 0.5, 1), transform 0.28s ease-out",
+              }}
+              className="pointer-events-none absolute top-[-20px] grid size-12 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_22px_hsl(var(--primary)/0.5)]"
             >
               <ActiveIcon className="size-[21px]" strokeWidth={2.6} />
             </span>
