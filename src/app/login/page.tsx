@@ -1,18 +1,25 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useRef, useState } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/client";
 
 type Mode = "signin" | "signup";
 
-export default function LoginPage() {
-  const router = useRouter();
+const AUTH_TIMEOUT_MS = 15_000;
 
-  // Created lazily so the page still prerenders before Supabase env vars exist.
+function withTimeout<T>(promise: PromiseLike<T>): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error("AUTH_TIMEOUT")), AUTH_TIMEOUT_MS);
+  });
+  return Promise.race([Promise.resolve(promise), timeout]).finally(() => clearTimeout(timer));
+}
+
+export default function LoginPage() {
   const supabaseRef = useRef<ReturnType<typeof createClient>>();
   const getSupabase = () => (supabaseRef.current ??= createClient());
 
@@ -21,35 +28,58 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
 
   const isSignup = mode === "signup";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setAuthError("");
     setLoading(true);
 
-    const supabase = getSupabase();
-    const creds = { email: email.trim(), password };
-
     try {
-      if (!isSignup) {
-        const { error } = await supabase.auth.signInWithPassword(creds);
-        if (error) throw error;
-      } else {
-        const { data, error } = await supabase.auth.signUp(creds);
-        if (error) throw error;
-        if (!data.session) {
-          toast.success("สร้างบัญชีแล้ว — เปิดอีเมลยืนยันก่อนเข้าสู่ระบบ");
-          setMode("signin");
-          setLoading(false);
-          return;
+      const supabase = getSupabase();
+      const credentials = { email: email.trim().toLowerCase(), password };
+      const result = await withTimeout(
+        isSignup
+          ? supabase.auth.signUp(credentials)
+          : supabase.auth.signInWithPassword(credentials),
+      );
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      if (!result.data.session) {
+        toast.success("สร้างบัญชีแล้ว — เปิดอีเมลยืนยันก่อนเข้าสู่ระบบ");
+        setMode("signin");
+        return;
+      }
+
+      if (result.data.user) {
+        const { error: profileError } = await withTimeout(
+          supabase
+            .from("profiles")
+            .upsert({ id: result.data.user.id }, { onConflict: "id", ignoreDuplicates: true }),
+        );
+        if (profileError) {
+          console.error("[auth] profile bootstrap failed", {
+            code: profileError.code,
+            message: profileError.message,
+          });
         }
       }
-      // cookie is set by @supabase/ssr — let the server pick it up, then go.
-      router.refresh();
-      router.replace("/dashboard");
+
+      window.location.assign("/dashboard");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "ไม่สำเร็จ ลองอีกครั้ง");
+      const message = err instanceof Error && err.message === "AUTH_TIMEOUT"
+          ? "Supabase ใช้เวลาตอบกลับนานเกินไป กรุณาลองใหม่"
+          : err instanceof Error
+            ? err.message
+            : "ไม่สำเร็จ ลองอีกครั้ง";
+      setAuthError(message);
+      toast.error(message);
+    } finally {
       setLoading(false);
     }
   }
@@ -57,9 +87,14 @@ export default function LoginPage() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-6">
       <div className="mb-8 text-center">
-        <div className="mx-auto mb-3 flex size-16 items-center justify-center rounded-3xl bg-primary text-3xl shadow-lg shadow-primary/20">
-          🥗
-        </div>
+        <Image
+          src="/icon.svg"
+          alt="LazyFit"
+          width={64}
+          height={64}
+          priority
+          className="mx-auto mb-3 size-16 rounded-3xl shadow-lg shadow-primary/20"
+        />
         <h1 className="text-2xl font-bold">LazyFit</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {isSignup
@@ -74,6 +109,8 @@ export default function LoginPage() {
           required
           inputMode="email"
           autoComplete="email"
+          aria-invalid={Boolean(authError)}
+          aria-describedby={authError ? "auth-error" : undefined}
           placeholder="อีเมล"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -86,6 +123,8 @@ export default function LoginPage() {
             required
             minLength={6}
             autoComplete={isSignup ? "new-password" : "current-password"}
+            aria-invalid={Boolean(authError)}
+            aria-describedby={authError ? "auth-error" : undefined}
             placeholder={isSignup ? "ตั้งรหัสผ่าน (อย่างน้อย 6 ตัว)" : "รหัสผ่าน"}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -101,6 +140,12 @@ export default function LoginPage() {
           </button>
         </div>
 
+        {authError ? (
+          <p id="auth-error" role="alert" className="rounded-xl bg-rose-500/10 px-3 py-2 text-sm text-rose-600 dark:text-rose-400">
+            {authError}
+          </p>
+        ) : null}
+
         <Button type="submit" size="lg" className="w-full" disabled={loading}>
           {loading ? <Loader2 className="size-4 animate-spin" /> : null}
           {isSignup ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
@@ -109,13 +154,16 @@ export default function LoginPage() {
 
       <button
         type="button"
-        onClick={() => setMode(isSignup ? "signin" : "signup")}
+        onClick={() => {
+          setAuthError("");
+          setMode(isSignup ? "signin" : "signup");
+        }}
         className="mt-4 text-center text-sm text-muted-foreground"
       >
         {isSignup ? (
-          <>มีบัญชีอยู่แล้ว? <span className="font-medium text-primary">เข้าสู่ระบบ</span></>
+          <>มีบัญชีอยู่แล้ว? <span className="font-medium text-primary-strong">เข้าสู่ระบบ</span></>
         ) : (
-          <>ยังไม่มีบัญชี? <span className="font-medium text-primary">สมัครสมาชิก</span></>
+          <>ยังไม่มีบัญชี? <span className="font-medium text-primary-strong">สมัครสมาชิก</span></>
         )}
       </button>
     </main>

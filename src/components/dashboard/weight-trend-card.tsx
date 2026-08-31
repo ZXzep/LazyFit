@@ -38,7 +38,7 @@ export function WeightTrendCard({
     <Card>
       <header className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Scale className="size-5 text-primary" />
+          <Scale className="size-5 text-primary-strong" />
           <h2 className="font-semibold">น้ำหนัก</h2>
         </div>
         <Button size="sm" variant="ghost" onClick={() => setOpen((v) => !v)}>
@@ -75,7 +75,7 @@ export function WeightTrendCard({
           </span>
         </span>
         <span
-          className={delta <= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"}
+          className={delta <= 0 ? "text-primary-strong" : "text-rose-500"}
         >
           {delta > 0 ? "+" : ""}
           {delta.toFixed(1)} กก.

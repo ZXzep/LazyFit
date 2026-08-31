@@ -94,7 +94,7 @@ export function WorkoutCard({
           <span className="text-lg leading-none">{selected.emoji ?? "🏃"}</span>
           <h2 className="font-semibold">ออกกำลังกาย</h2>
         </div>
-        <span className="inline-flex items-center gap-1 rounded-full bg-orange-500/15 px-2.5 py-1 text-xs font-medium text-orange-600 dark:text-orange-400">
+        <span className="inline-flex items-center gap-1 rounded-full bg-primary/20 px-2.5 py-1 text-xs font-medium text-primary-strong">
           <Flame className="size-3.5" />
           {streak} วันติด
         </span>
@@ -118,7 +118,7 @@ export function WorkoutCard({
                   type="button"
                   onClick={() => setSelected(o)}
                   className={`group inline-flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-sm transition-colors ${
-                    active ? "border-primary bg-primary/10 text-primary" : "border-border bg-background"
+                    active ? "border-primary bg-primary/15 text-primary-strong" : "border-border bg-background"
                   }`}
                 >
                   <span>{o.emoji ?? "•"}</span>
@@ -209,7 +209,7 @@ export function WorkoutCard({
                 {w.activity_emoji ? `${w.activity_emoji} ` : ""}
                 {w.activity} · {w.duration_min} นาที
               </span>
-              <span className="shrink-0 tabular-nums text-emerald-600 dark:text-emerald-400">
+              <span className="shrink-0 tabular-nums text-primary-strong">
                 −{w.calories_burned}
               </span>
               <button
@@ -365,7 +365,7 @@ function AddActivityForm({
             onClick={() => setIntensityKey(i.key)}
             className={`h-9 rounded-xl border text-sm transition-colors ${
               intensityKey === i.key
-                ? "border-primary bg-primary/10 text-primary"
+                ? "border-primary bg-primary/15 text-primary-strong"
                 : "border-border bg-background"
             }`}
           >

@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import Image from "next/image";
+import { Activity, ChartNoAxesCombined, Dumbbell, Home, Plus, Sparkles, Utensils } from "lucide-react";
 import { toast } from "sonner";
 import type {
   ActivityRef,
@@ -31,6 +33,16 @@ import { QuickAiEstimator } from "./quick-ai-estimator";
 import { WeeklyFlexCard } from "./weekly-flex-card";
 import { WeightTrendCard } from "./weight-trend-card";
 import { WorkoutCard } from "./workout-card";
+import { fmt } from "@/lib/utils";
+
+type AppTab = "home" | "food" | "workout" | "progress";
+
+const TAB_META: Record<AppTab, { label: string; title: string; subtitle: string }> = {
+  home: { label: "วันนี้", title: "ภาพรวมวันนี้", subtitle: "ค่อย ๆ ทำ เดี๋ยวก็ถึงเป้า" },
+  food: { label: "การกิน", title: "การกิน", subtitle: "บันทึกง่าย ไม่ต้องนับให้ปวดหัว" },
+  workout: { label: "ขยับ", title: "ออกกำลังกาย", subtitle: "นิดเดียวก็นับว่าเริ่มแล้ว" },
+  progress: { label: "สถิติ", title: "ความคืบหน้า", subtitle: "ดูแนวโน้ม ไม่ตัดสินตัวเองรายวัน" },
+};
 
 interface Props {
   userName: string;
@@ -64,6 +76,7 @@ export function DashboardClient({
   const [target, setTarget] = useState(profile?.daily_calorie_target ?? 1800);
   const [showOnboarding, setShowOnboarding] = useState(!profile?.onboarded_at);
   const [busy, setBusy] = useState(false);
+  const [activeTab, setActiveTab] = useState<AppTab>("home");
 
   const cheatQuota = profile?.weekly_cheat_quota ?? 3;
   const tz = profile?.timezone ?? "Asia/Bangkok";
@@ -222,62 +235,163 @@ export function DashboardClient({
     [today],
   );
 
-  // ----- layout --------------------------------------------------------------
-  const cards = [
-    <CaloricBalanceCard key="balance" caloriesIn={caloriesIn} caloriesOut={caloriesOut} target={target} />,
-    <QuickAiEstimator key="ai" busy={busy} onLog={handleLogMeal} />,
-    <MealHistory key="meals" meals={meals} tz={tz} busy={busy} onDelete={handleDeleteMeal} />,
-    <WorkoutCard
-      key="workout"
-      streak={streak}
-      busy={busy}
-      workouts={workouts}
-      activities={activities}
-      tz={tz}
-      onLog={handleLogWorkout}
-      onDeleteWorkout={handleDeleteWorkout}
-      onAddActivity={handleAddActivity}
-      onDeleteActivity={handleDeleteActivity}
-    />,
-    <WeeklyFlexCard key="flex" week={week} cheatQuota={cheatQuota} />,
-    <WeightTrendCard
-      key="weight"
-      points={weights}
-      goalKg={profile?.goal_weight_kg ?? null}
-      busy={busy}
-      onLog={handleLogWeight}
-    />,
-  ];
-
   return (
-    <div className="mx-auto w-full max-w-md px-4 pt-[max(0.75rem,env(safe-area-inset-top))] safe-bottom">
-      <header className="flex items-center justify-between py-3">
-        <div className="min-w-0">
-          <p className="text-sm text-muted-foreground">{greetingTH(tz)} 👋</p>
-          <h1 className="truncate text-xl font-bold leading-tight">{name}</h1>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <ThemeToggle />
-          <SignOutButton />
+    <div className="mx-auto min-h-dvh w-full max-w-md bg-background shadow-[0_0_48px_hsl(var(--foreground)/0.06)]">
+      <header className="sticky top-0 z-30 border-b border-border/70 bg-background/90 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-xl">
+        <div className="flex items-center justify-between">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <Image src="/icon.svg" alt="" width={40} height={40} className="size-10 rounded-xl" />
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-strong">LazyFit</p>
+              <p className="truncate text-sm text-muted-foreground">{greetingTH(tz)}, {name}</p>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <ThemeToggle />
+            <SignOutButton />
+          </div>
         </div>
       </header>
 
-      <div className="mt-1 space-y-4">
-        {cards.map((card, i) => (
-          <div key={card.key} className="card-in" style={{ animationDelay: `${i * 55}ms` }}>
-            {card}
-          </div>
-        ))}
-      </div>
+      <main aria-busy={busy} className="px-4 pb-32 pt-5">
+        {busy ? <div className="fixed inset-x-0 top-0 z-[60] mx-auto h-1 max-w-md overflow-hidden bg-primary/20"><span className="loading-bar block h-full w-1/2 bg-primary-strong" /></div> : null}
+        <div className="mb-5">
+          <p className="text-sm text-muted-foreground">{TAB_META[activeTab].subtitle}</p>
+          <h1 className="mt-0.5 text-2xl font-bold tracking-tight">{TAB_META[activeTab].title}</h1>
+        </div>
+
+        <div key={activeTab} className="card-in space-y-4">
+          {activeTab === "home" ? (
+            <>
+              <CaloricBalanceCard caloriesIn={caloriesIn} caloriesOut={caloriesOut} target={target} />
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("food")}
+                  className="rounded-3xl bg-primary p-4 text-left text-primary-foreground shadow-sm transition-transform active:scale-[0.98]"
+                >
+                  <span className="flex size-9 items-center justify-center rounded-2xl bg-background/70"><Utensils className="size-4" /></span>
+                  <span className="mt-5 block text-xs opacity-70">กินวันนี้</span>
+                  <span className="block text-xl font-bold tabular-nums">{fmt(caloriesIn)} <small className="text-xs font-medium">kcal</small></span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("workout")}
+                  className="rounded-3xl border border-border bg-card p-4 text-left shadow-sm transition-transform active:scale-[0.98]"
+                >
+                  <span className="flex size-9 items-center justify-center rounded-2xl bg-primary/20"><Dumbbell className="size-4 text-primary-strong" /></span>
+                  <span className="mt-5 block text-xs text-muted-foreground">เบิร์นวันนี้</span>
+                  <span className="block text-xl font-bold tabular-nums">{fmt(caloriesOut)} <small className="text-xs font-medium">kcal</small></span>
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab("food")}
+                className="flex w-full items-center gap-3 rounded-3xl border border-primary/60 bg-primary/10 p-4 text-left transition-colors active:bg-primary/20"
+              >
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary"><Sparkles className="size-5" /></span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold">กินอะไรมา ให้ AI ช่วยดู</span>
+                  <span className="block text-sm text-muted-foreground">พิมพ์ชื่อเมนูแล้วประเมินได้เลย</span>
+                </span>
+                <span aria-hidden="true" className="text-xl">›</span>
+              </button>
+              <div className="rounded-3xl bg-muted/65 p-4 text-sm text-muted-foreground">
+                ดูน้ำหนักและภาพรวมรายสัปดาห์ได้ที่แท็บ <button type="button" onClick={() => setActiveTab("progress")} className="font-semibold text-primary-strong">สถิติ</button>
+              </div>
+            </>
+          ) : null}
+
+          {activeTab === "food" ? (
+            <>
+              <QuickAiEstimator busy={busy} onLog={handleLogMeal} />
+              <MealHistory meals={meals} tz={tz} busy={busy} onDelete={handleDeleteMeal} />
+            </>
+          ) : null}
+
+          {activeTab === "workout" ? (
+            <WorkoutCard
+              streak={streak}
+              busy={busy}
+              workouts={workouts}
+              activities={activities}
+              tz={tz}
+              onLog={handleLogWorkout}
+              onDeleteWorkout={handleDeleteWorkout}
+              onAddActivity={handleAddActivity}
+              onDeleteActivity={handleDeleteActivity}
+            />
+          ) : null}
+
+          {activeTab === "progress" ? (
+            <>
+              <WeightTrendCard
+                points={weights}
+                goalKg={profile?.goal_weight_kg ?? null}
+                busy={busy}
+                onLog={handleLogWeight}
+              />
+              <WeeklyFlexCard week={week} cheatQuota={cheatQuota} />
+            </>
+          ) : null}
+        </div>
+      </main>
+
+      <nav
+        aria-label="เมนูหลัก"
+        className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md border-t border-border/70 bg-background/92 px-3 pb-[max(0.65rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl"
+      >
+        <div className="grid grid-cols-5 gap-1">
+          <TabButton tab="home" activeTab={activeTab} onSelect={setActiveTab} icon={Home} />
+          <TabButton tab="food" activeTab={activeTab} onSelect={setActiveTab} icon={Utensils} />
+          <span aria-hidden="true" />
+          <TabButton tab="workout" activeTab={activeTab} onSelect={setActiveTab} icon={Dumbbell} />
+          <TabButton tab="progress" activeTab={activeTab} onSelect={setActiveTab} icon={ChartNoAxesCombined} />
+        </div>
+      </nav>
+
+      <button
+        type="button"
+        aria-label="บันทึกอาหาร"
+        onClick={() => setActiveTab("food")}
+        className="fixed bottom-[max(1.15rem,env(safe-area-inset-bottom))] left-1/2 z-50 flex size-14 -translate-x-1/2 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_8px_24px_hsl(var(--primary)/0.45)] transition-transform active:scale-95"
+      >
+        <Plus className="size-6" strokeWidth={2.5} />
+      </button>
 
       {showOnboarding && (
         <OnboardingSheet defaultName={userName} onDone={handleOnboardingDone} />
       )}
-
-      <p className="mt-8 text-center text-xs text-muted-foreground">
-        กินให้พอดี 80% · ยืดหยุ่นได้ 20% · ขยับนิดหน่อยก็ยังดี
-      </p>
     </div>
+  );
+}
+
+function TabButton({
+  tab,
+  activeTab,
+  onSelect,
+  icon: Icon,
+}: {
+  tab: AppTab;
+  activeTab: AppTab;
+  onSelect: (tab: AppTab) => void;
+  icon: typeof Activity;
+}) {
+  const active = tab === activeTab;
+  return (
+    <button
+      type="button"
+      aria-current={active ? "page" : undefined}
+      onClick={() => onSelect(tab)}
+      className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl text-[11px] font-medium transition-colors ${
+        active ? "text-foreground" : "text-muted-foreground active:bg-muted"
+      }`}
+    >
+      <span className={`flex size-8 items-center justify-center rounded-xl ${active ? "bg-primary" : ""}`}>
+        <Icon className="size-5" strokeWidth={active ? 2.5 : 2} />
+      </span>
+      <span>{TAB_META[tab].label}</span>
+    </button>
   );
 }
 

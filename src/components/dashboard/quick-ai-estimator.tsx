@@ -10,9 +10,9 @@ import { Button } from "@/components/ui/button";
 import { fmt } from "@/lib/utils";
 
 const MEAL_BADGE: Record<MealType, { label: string; cls: string }> = {
-  clean: { label: "Clean 🥗", cls: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" },
-  normal: { label: "ปกติ 🍚", cls: "bg-sky-500/15 text-sky-600 dark:text-sky-400" },
-  cheat: { label: "Cheat 🍔", cls: "bg-amber-500/15 text-amber-600 dark:text-amber-400" },
+  clean: { label: "Clean 🥗", cls: "bg-primary/20 text-primary-strong" },
+  normal: { label: "ปกติ 🍚", cls: "bg-muted text-muted-foreground" },
+  cheat: { label: "Cheat 🍔", cls: "bg-rose-500/10 text-rose-600 dark:text-rose-400" },
 };
 
 interface SelectedImage {
@@ -101,7 +101,7 @@ export function QuickAiEstimator({
   return (
     <Card>
       <header className="flex items-center gap-2">
-        <Sparkles className="size-5 text-primary" />
+        <Sparkles className="size-5 text-primary-strong" />
         <h2 className="font-semibold">ให้ AI ช่วยนับแคลอรี</h2>
       </header>
 
@@ -195,7 +195,7 @@ export function QuickAiEstimator({
 
               <Button onClick={handleLog} size="lg" className="mt-3 w-full" disabled={busy}>
                 {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-                Log This Meal
+                บันทึกมื้อนี้
               </Button>
             {typeof result.confidence === "number" && (
               <p className="mt-2 text-center text-[11px] text-muted-foreground">

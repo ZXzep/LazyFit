@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#BEF54E"/>
+
+  <!-- Two bold orbit lines remain legible at favicon scale. -->
+  <g fill="none" stroke="#15180F" stroke-linecap="round">
+    <ellipse cx="256" cy="256" rx="202" ry="112" stroke-width="18"
+      transform="rotate(-32 256 256)"/>
+    <ellipse cx="256" cy="256" rx="230" ry="140" stroke-width="8"
+      transform="rotate(-32 256 256)"/>
+  </g>
+
+  <!-- Main sparkle deliberately covers the orbit to create the crossover. -->
+  <path fill="#15180F" d="M246 108c11 79 29 104 116 118l112 19-112 19c-87 14-105 39-116 118-11-79-29-104-116-118L18 245l112-19c87-14 105-39 116-118Z"/>
+  <path fill="#15180F" d="M126 74c5 35 14 44 49 49-35 5-44 14-49 49-5-35-14-44-49-49 35-5 44-14 49-49Z"/>
+  <path fill="#15180F" d="M361 339c4 28 12 36 40 40-28 4-36 12-40 40-4-28-12-36-40-40 28-4 36-12 40-40Z"/>
+</svg>

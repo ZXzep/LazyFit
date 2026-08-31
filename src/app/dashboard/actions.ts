@@ -58,7 +58,8 @@ export async function saveOnboarding(input: OnboardingInput): Promise<{ daily_ca
 
   const { error } = await supabase
     .from("profiles")
-    .update({
+    .upsert({
+      id: user.id,
       display_name: d.display_name,
       current_weight_kg: d.weight_kg,
       height_cm: d.height_cm,
@@ -69,8 +70,7 @@ export async function saveOnboarding(input: OnboardingInput): Promise<{ daily_ca
       goal_weight_kg: d.goal_weight_kg ?? null,
       daily_calorie_target,
       onboarded_at: new Date().toISOString(),
-    })
-    .eq("id", user.id);
+    }, { onConflict: "id" });
   if (error) throw new Error(error.message);
 
   // seed the first weight point so the trend chart has something to show

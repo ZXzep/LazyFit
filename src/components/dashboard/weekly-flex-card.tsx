@@ -25,7 +25,7 @@ export function WeeklyFlexCard({ week, cheatQuota }: { week: WeekDay[]; cheatQuo
   return (
     <Card>
       <header className="flex items-center gap-2">
-        <PartyPopper className="size-5 text-amber-500" />
+        <PartyPopper className="size-5 text-primary-strong" />
         <h2 className="font-semibold">ยืดหยุ่น 80/20 สัปดาห์นี้</h2>
       </header>
 
@@ -39,7 +39,7 @@ export function WeeklyFlexCard({ week, cheatQuota }: { week: WeekDay[]; cheatQuo
         <Progress
           value={pct}
           className="mt-2"
-          indicatorClassName={overQuota ? "bg-rose-500" : "bg-amber-500"}
+          indicatorClassName={overQuota ? "bg-rose-500" : "bg-primary"}
         />
         <p className="mt-1.5 text-xs text-muted-foreground">
           {overQuota
@@ -74,7 +74,7 @@ export function WeeklyFlexCard({ week, cheatQuota }: { week: WeekDay[]; cheatQuo
         <div className="rounded-xl bg-muted/50 px-3 py-2">
           <div className="text-xs text-muted-foreground">สมดุลทั้งสัปดาห์</div>
           <div
-            className={`font-semibold tabular-nums ${netWeek <= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-foreground"}`}
+            className={`font-semibold tabular-nums ${netWeek <= 0 ? "text-primary-strong" : "text-foreground"}`}
           >
             {netWeek > 0 ? "+" : ""}
             {fmt(netWeek)} kcal

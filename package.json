@@ -18,6 +18,7 @@
     "db:types": "supabase gen types typescript --local > src/types/supabase.ts"
   },
   "dependencies": {
+    "@fontsource-variable/noto-sans-thai": "^5.3.0",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.45.4",
     "clsx": "^2.1.1",

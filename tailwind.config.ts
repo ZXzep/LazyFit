@@ -15,6 +15,7 @@ export default {
         border: "hsl(var(--border))",
         primary: "hsl(var(--primary))",
         "primary-foreground": "hsl(var(--primary-foreground))",
+        "primary-strong": "hsl(var(--primary-strong))",
         ring: "hsl(var(--ring))",
       },
       borderRadius: {

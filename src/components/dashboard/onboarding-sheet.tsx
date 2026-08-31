@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Loader2, Sparkles } from "lucide-react";
+import Image from "next/image";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { saveOnboarding } from "@/app/dashboard/actions";
@@ -97,13 +98,17 @@ export function OnboardingSheet({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-background">
       <motion.div
-        initial={{ y: 24 }}
-        animate={{ y: 0 }}
-        transition={{ type: "spring", stiffness: 280, damping: 30 }}
-        className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-3xl border border-border bg-card p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:rounded-3xl"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.22 }}
+        className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]"
       >
+        <div className="mb-8 flex items-center gap-2">
+          <Image src="/icon.svg" alt="" width={36} height={36} className="size-9 rounded-xl" />
+          <span className="font-bold">LazyFit</span>
+        </div>
         {/* progress dots */}
         <div className="mb-4 flex justify-center gap-1.5">
           {[0, 1].map((s) => (
@@ -115,7 +120,7 @@ export function OnboardingSheet({
         </div>
 
         {step === 0 ? (
-          <div>
+          <div className="my-auto pb-16">
             <div className="mb-5 text-center">
               <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-2xl bg-primary/15 text-2xl">
                 👋
@@ -144,7 +149,7 @@ export function OnboardingSheet({
             </Button>
           </div>
         ) : (
-          <div>
+          <div className="pb-6">
             <button
               type="button"
               onClick={() => setStep(0)}
@@ -168,7 +173,7 @@ export function OnboardingSheet({
                   type="button"
                   onClick={() => setSex(s)}
                   className={`h-11 rounded-xl border text-sm font-medium transition-colors ${
-                    sex === s ? "border-primary bg-primary/10 text-primary" : "border-border bg-background"
+                    sex === s ? "border-primary bg-primary/15 text-primary-strong" : "border-border bg-background"
                   }`}
                 >
                   {s === "male" ? "ชาย" : "หญิง"}
@@ -212,7 +217,7 @@ export function OnboardingSheet({
 
             <div className="mt-4 flex items-center justify-between rounded-2xl bg-primary/10 px-4 py-3">
               <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                <Sparkles className="size-4 text-primary" /> แคลอรีต่อวัน
+                <Sparkles className="size-4 text-primary-strong" /> แคลอรีต่อวัน
               </span>
               <span className="text-lg font-bold tabular-nums">
                 {preview ? `≈ ${preview.toLocaleString()} kcal` : "—"}

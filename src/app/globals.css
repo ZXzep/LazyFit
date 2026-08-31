@@ -3,30 +3,35 @@
 @tailwind utilities;
 
 :root {
+  --font-sans: "Noto Sans Thai Variable", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", "Helvetica Neue", sans-serif;
+
   /* light */
-  --background: 150 25% 99%;
-  --foreground: 160 14% 10%;
+  --background: 0 0% 100%;
+  --foreground: 76 23% 8%;
   --card: 0 0% 100%;
-  --card-foreground: 160 14% 10%;
-  --muted: 150 14% 95%;
-  --muted-foreground: 160 6% 42%;
-  --border: 150 12% 89%;
-  --primary: 152 56% 39%;
-  --primary-foreground: 0 0% 100%;
-  --ring: 152 56% 39%;
+  --card-foreground: 76 23% 8%;
+  --muted: 76 64% 95%;
+  --muted-foreground: 75 10% 40%;
+  --border: 76 28% 86%;
+  --primary: 77 89% 63%;
+  --primary-foreground: 76 23% 8%;
+  --primary-strong: 76 100% 25%;
+  --ring: 77 89% 63%;
 }
 
 .dark {
-  --background: 162 22% 6%;
-  --foreground: 150 12% 95%;
-  --card: 162 18% 10%;
-  --card-foreground: 150 12% 95%;
-  --muted: 162 12% 16%;
-  --muted-foreground: 150 7% 60%;
-  --border: 162 12% 19%;
-  --primary: 152 52% 47%;
-  --primary-foreground: 162 30% 7%;
-  --ring: 152 52% 47%;
+  --background: 76 23% 6%;
+  --foreground: 76 35% 96%;
+  --card: 76 18% 9%;
+  --card-foreground: 76 35% 96%;
+  --muted: 76 12% 15%;
+  --muted-foreground: 76 8% 63%;
+  --border: 76 12% 20%;
+  --primary: 77 89% 63%;
+  --primary-foreground: 76 23% 8%;
+  --primary-strong: 77 89% 63%;
+  --ring: 77 89% 63%;
 }
 
 @layer base {
@@ -77,6 +82,29 @@
   to {
     transform: none;
   }
+}
+
+@keyframes loading-slide {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(210%); }
+}
+
+@keyframes skeleton-pulse {
+  50% { opacity: 0.45; }
+}
+
+.loading-bar {
+  animation: loading-slide 0.9s ease-in-out infinite;
+}
+
+.skeleton {
+  animation: skeleton-pulse 1.35s ease-in-out infinite;
+  background: hsl(var(--muted));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-bar,
+  .skeleton { animation: none; }
 }
 @media (prefers-reduced-motion: no-preference) {
   .card-in {

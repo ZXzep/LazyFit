@@ -7,9 +7,9 @@ import { fmt } from "@/lib/utils";
 import type { Meal, MealType } from "@/types/db";
 
 const BADGE: Record<MealType, { label: string; cls: string }> = {
-  clean: { label: "clean", cls: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" },
-  normal: { label: "ปกติ", cls: "bg-sky-500/15 text-sky-600 dark:text-sky-400" },
-  cheat: { label: "cheat", cls: "bg-amber-500/15 text-amber-600 dark:text-amber-400" },
+  clean: { label: "clean", cls: "bg-primary/20 text-primary-strong" },
+  normal: { label: "ปกติ", cls: "bg-muted text-muted-foreground" },
+  cheat: { label: "cheat", cls: "bg-rose-500/10 text-rose-600 dark:text-rose-400" },
 };
 
 export function MealHistory({
@@ -29,7 +29,7 @@ export function MealHistory({
     <Card>
       <header className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <UtensilsCrossed className="size-5 text-primary" />
+          <UtensilsCrossed className="size-5 text-primary-strong" />
           <h2 className="font-semibold">มื้อวันนี้</h2>
         </div>
         {meals.length > 0 && (
