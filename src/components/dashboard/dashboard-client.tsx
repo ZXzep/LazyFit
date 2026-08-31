@@ -358,17 +358,22 @@ export function DashboardClient({
 // ---------------------------------------------------------------------------
 const NAV_H = 62;
 
+const NOTCH_R = 30; // notch radius — circle is r24, leaves a ~6px ring
+const NOTCH_CY = 4; // notch / circle centre, y
+
 function navPath(w: number, h: number, cx: number): string {
-  const r = 22; // corner radius
-  const nr = 30; // notch half-width
-  const nd = 20; // notch depth
-  const l = Math.max(r, cx - nr - 6);
-  const rt = Math.min(w - r, cx + nr + 6);
+  const r = 16; // outer corner radius
+  const R = NOTCH_R;
+  const cy = NOTCH_CY;
+  const bl = 8; // blend from the flat edge into the cup
+  const x1 = cx - R - bl;
+  const x2 = cx + R + bl;
   return [
     `M ${r} 0`,
-    `L ${l} 0`,
-    `C ${cx - nr} 0 ${cx - nr + 4} ${nd} ${cx} ${nd}`,
-    `C ${cx + nr - 4} ${nd} ${cx + nr} 0 ${rt} 0`,
+    `L ${x1} 0`,
+    `Q ${cx - R} 0 ${cx - R} ${cy}`, // ease flat edge down to a vertical tangent
+    `A ${R} ${R} 0 0 0 ${cx + R} ${cy}`, // deep round cup around the circle
+    `Q ${cx + R} 0 ${x2} 0`, // ease back up to the flat edge
     `L ${w - r} 0`,
     `A ${r} ${r} 0 0 1 ${w} ${r}`,
     `L ${w} ${h - r}`,
@@ -403,7 +408,11 @@ function BottomNav({
     return () => ro.disconnect();
   }, []);
 
-  const cx = w ? ((activeIndex + 0.5) / TABS.length) * w : 0;
+  // notch centre = active tab centre within a padded row, clamped so the whole
+  // cup always fits inside the bar (matters on narrow phones)
+  const PAD = 18;
+  const raw = w ? PAD + ((activeIndex + 0.5) * (w - PAD * 2)) / TABS.length : 0;
+  const cx = w ? Math.min(Math.max(raw, 16 + NOTCH_R + 8), w - 16 - NOTCH_R - 8) : 0;
   const ActiveIcon = TABS[activeIndex].icon;
 
   return (
@@ -435,14 +444,14 @@ function BottomNav({
 
             <span
               style={{ left: cx, transition: "left 0.32s cubic-bezier(0.4, 0, 0.2, 1)" }}
-              className="pointer-events-none absolute top-[-21px] grid size-[50px] -translate-x-1/2 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_22px_hsl(var(--primary)/0.5)]"
+              className="pointer-events-none absolute top-[-20px] grid size-12 -translate-x-1/2 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_22px_hsl(var(--primary)/0.5)]"
             >
               <ActiveIcon className="size-[21px]" strokeWidth={2.6} />
             </span>
           </>
         )}
 
-        <div className="relative flex h-full">
+        <div className="relative flex h-full px-[18px]">
           {TABS.map(({ tab, icon: Icon }) => {
             const active = tab === activeTab;
             return (
