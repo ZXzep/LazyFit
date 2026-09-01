@@ -27,6 +27,7 @@ import { SettingsLink } from "@/components/settings-link";
 import { ThemeApply } from "@/components/theme-apply";
 import { normalizeTheme } from "@/lib/themes";
 import { SignOutButton } from "@/components/sign-out-button";
+import { AiChatSheet } from "./ai-chat-sheet";
 import { CaloricBalanceCard } from "./caloric-balance-card";
 import { MealHistory } from "./meal-history";
 import { OnboardingSheet } from "./onboarding-sheet";
@@ -85,7 +86,7 @@ export function DashboardClient({
   const [showOnboarding, setShowOnboarding] = useState(!profile?.onboarded_at);
   const [busy, setBusy] = useState(false);
   const [activeTab, setActiveTab] = useState<AppTab>("home");
-  const activeIndex = Math.max(0, TABS.findIndex((t) => t.tab === activeTab));
+  const [chatOpen, setChatOpen] = useState(false);
 
   const cheatQuota = profile?.weekly_cheat_quota ?? 3;
   const tz = profile?.timezone ?? "Asia/Bangkok";
@@ -339,7 +340,13 @@ export function DashboardClient({
         </div>
       </main>
 
-      <BottomNav activeTab={activeTab} activeIndex={activeIndex} onSelect={setActiveTab} />
+      <BottomNav
+        activeTab={activeTab}
+        onSelect={setActiveTab}
+        onOpenChat={() => setChatOpen(true)}
+      />
+
+      <AiChatSheet open={chatOpen} onClose={() => setChatOpen(false)} userName={name} />
 
       {showOnboarding && (
         <OnboardingSheet defaultName={userName} onDone={handleOnboardingDone} />
@@ -349,30 +356,26 @@ export function DashboardClient({
 }
 
 // ---------------------------------------------------------------------------
-//  Bottom navigation — SVG bar whose top edge notches around the raised
-//  active-tab circle. Height is fixed so switching tabs never resizes it.
+//  Bottom navigation — 2 tabs + a permanent raised AI button + 2 tabs. The
+//  SVG bar's top edge cups around the centre AI button.
 // ---------------------------------------------------------------------------
 const NAV_H = 62;
 
-const NOTCH_R = 30; // notch radius — circle is r24, leaves a ~6px ring
-const NOTCH_CY = 4; // notch / circle centre, y
+const NOTCH_R = 34; // fixed centre cup — the AI button (size-14, r28) sits in it
 
-/**
- * Bar outline with a cup notched into the top edge. The cup is drawn as a
- * half-ellipse between `lx` and `rx` at depth `dep` — passing asymmetric rims
- * + a squashed depth makes it slosh like liquid mid-transit.
- */
-function navPath(w: number, h: number, lx: number, rx: number, dep: number): string {
+/** Bar outline with a deep round cup notched into the centre of the top edge. */
+function navPath(w: number, h: number): string {
   const r = 16; // outer corner radius
-  const cy = NOTCH_CY;
-  const bl = 8; // blend from the flat edge into the cup
-  const arcRx = (rx - lx) / 2;
+  const cx = w / 2;
+  const cy = 4;
+  const bl = 9;
+  const R = NOTCH_R;
   return [
     `M ${r} 0`,
-    `L ${(lx - bl).toFixed(2)} 0`,
-    `Q ${lx.toFixed(2)} 0 ${lx.toFixed(2)} ${cy}`,
-    `A ${arcRx.toFixed(2)} ${dep.toFixed(2)} 0 0 0 ${rx.toFixed(2)} ${cy}`,
-    `Q ${rx.toFixed(2)} 0 ${(rx + bl).toFixed(2)} 0`,
+    `L ${(cx - R - bl).toFixed(2)} 0`,
+    `Q ${(cx - R).toFixed(2)} 0 ${(cx - R).toFixed(2)} ${cy}`,
+    `A ${R} ${R} 0 0 0 ${(cx + R).toFixed(2)} ${cy}`,
+    `Q ${(cx + R).toFixed(2)} 0 ${(cx + R + bl).toFixed(2)} 0`,
     `L ${w - r} 0`,
     `A ${r} ${r} 0 0 1 ${w} ${r}`,
     `L ${w} ${h - r}`,
@@ -387,12 +390,12 @@ function navPath(w: number, h: number, lx: number, rx: number, dep: number): str
 
 function BottomNav({
   activeTab,
-  activeIndex,
   onSelect,
+  onOpenChat,
 }: {
   activeTab: AppTab;
-  activeIndex: number;
   onSelect: (tab: AppTab) => void;
+  onOpenChat: () => void;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(0);
@@ -407,44 +410,8 @@ function BottomNav({
     return () => ro.disconnect();
   }, []);
 
-  // notch centre = active tab centre within a padded row, clamped so the whole
-  // cup always fits inside the bar (matters on narrow phones)
-  const PAD = 18;
-  const raw = w ? PAD + ((activeIndex + 0.5) * (w - PAD * 2)) / TABS.length : 0;
-  const target = w ? Math.min(Math.max(raw, 16 + NOTCH_R + 8), w - 16 - NOTCH_R - 8) : 0;
-  const ActiveIcon = TABS[activeIndex].icon;
-
-  /*
-   * Liquid transition: on a tab change the cup snaps to the destination but
-   * stretches wide + shallow toward the travel direction, then relaxes back
-   * to a deep round cup — like surface tension. Purely timeout + CSS driven
-   * (rAF is throttled on hidden tabs; this keeps working).
-   */
-  const prevRef = useRef(target);
-  const [pulse, setPulse] = useState(0); // signed 0..1: |mag| stretch, sign = direction
-
-  useEffect(() => {
-    const from = prevRef.current;
-    prevRef.current = target;
-    if (!from || !target || from === target) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const dir = Math.sign(target - from);
-    setPulse(dir);
-    const t1 = setTimeout(() => setPulse(dir * 0.4), 120);
-    const t2 = setTimeout(() => setPulse(0), 300);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-    };
-  }, [target]);
-
-  const mag = Math.abs(pulse);
-  const dir = Math.sign(pulse) || 1;
-  const lx = target - NOTCH_R - mag * (dir < 0 ? 36 : 10);
-  const rx = target + NOTCH_R + mag * (dir > 0 ? 36 : 10);
-  const dep = NOTCH_R - mag * 12;
-  const blobSx = 1 + mag * 0.16;
-  const blobSy = 1 - mag * 0.12;
+  const left = TABS.slice(0, 2);
+  const right = TABS.slice(2);
 
   return (
     <nav
@@ -453,69 +420,79 @@ function BottomNav({
     >
       <div ref={wrapRef} className="relative" style={{ height: NAV_H }}>
         {w > 0 && (
-          <>
-            <svg
-              width={w}
-              height={NAV_H}
-              viewBox={`0 0 ${w} ${NAV_H}`}
-              className="absolute inset-0 drop-shadow-[0_12px_30px_hsl(var(--foreground)/0.16)]"
-              aria-hidden
-            >
-              <path
-                d={navPath(w, NAV_H, lx, rx, dep)}
-                style={{
-                  d: `path("${navPath(w, NAV_H, lx, rx, dep)}")`,
-                  transition: "d 0.28s cubic-bezier(0.4, 0, 0.2, 1)",
-                }}
-                fill="hsl(var(--background))"
-                stroke="hsl(var(--border))"
-                strokeWidth={1.25}
-              />
-            </svg>
-
-            <span
-              style={{
-                left: target,
-                transform: `translateX(-50%) scale(${blobSx.toFixed(3)}, ${blobSy.toFixed(3)})`,
-                transition:
-                  "left 0.42s cubic-bezier(0.5, 1.3, 0.5, 1), transform 0.28s ease-out",
-              }}
-              className="pointer-events-none absolute top-[-20px] grid size-12 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_22px_hsl(var(--primary)/0.5)]"
-            >
-              <ActiveIcon className="size-[21px]" strokeWidth={2.6} />
-            </span>
-          </>
+          <svg
+            width={w}
+            height={NAV_H}
+            viewBox={`0 0 ${w} ${NAV_H}`}
+            className="absolute inset-0 drop-shadow-[0_12px_30px_hsl(var(--foreground)/0.16)]"
+            aria-hidden
+          >
+            <path
+              d={navPath(w, NAV_H)}
+              fill="hsl(var(--background))"
+              stroke="hsl(var(--border))"
+              strokeWidth={1.25}
+            />
+          </svg>
         )}
 
-        <div className="relative flex h-full px-[18px]">
-          {TABS.map(({ tab, icon: Icon }) => {
-            const active = tab === activeTab;
-            return (
-              <button
-                key={tab}
-                type="button"
-                aria-label={TAB_META[tab].label}
-                aria-current={active ? "page" : undefined}
-                onClick={() => onSelect(tab)}
-                className="flex flex-1 flex-col items-center justify-end gap-1 pb-2"
-              >
-                <Icon
-                  className={`size-5 transition-opacity ${active ? "opacity-0" : "text-muted-foreground"}`}
-                  strokeWidth={2}
-                />
-                <span
-                  className={`text-[11px] font-semibold transition-colors ${
-                    active ? "text-primary-strong" : "text-muted-foreground"
-                  }`}
-                >
-                  {TAB_META[tab].label}
-                </span>
-              </button>
-            );
-          })}
+        {/* AI button — permanent centrepiece, seated in the cup */}
+        <button
+          type="button"
+          onClick={onOpenChat}
+          aria-label="ถาม AI"
+          className="absolute left-1/2 top-[-24px] z-10 grid size-14 -translate-x-1/2 place-items-center rounded-full bg-gradient-to-br from-primary to-primary-strong text-primary-foreground shadow-[0_12px_26px_hsl(var(--primary)/0.55)] transition-transform active:scale-95"
+        >
+          <Sparkles className="size-6" strokeWidth={2.4} />
+        </button>
+
+        <div className="relative flex h-full">
+          <TabGroup tabs={left} activeTab={activeTab} onSelect={onSelect} />
+          <span className="pointer-events-none w-16 shrink-0" aria-hidden />
+          <TabGroup tabs={right} activeTab={activeTab} onSelect={onSelect} />
         </div>
       </div>
     </nav>
+  );
+}
+
+function TabGroup({
+  tabs,
+  activeTab,
+  onSelect,
+}: {
+  tabs: { tab: AppTab; icon: LucideIcon }[];
+  activeTab: AppTab;
+  onSelect: (tab: AppTab) => void;
+}) {
+  return (
+    <div className="flex flex-1 justify-around">
+      {tabs.map(({ tab, icon: Icon }) => {
+        const active = tab === activeTab;
+        return (
+          <button
+            key={tab}
+            type="button"
+            aria-label={TAB_META[tab].label}
+            aria-current={active ? "page" : undefined}
+            onClick={() => onSelect(tab)}
+            className="flex flex-col items-center justify-end gap-1 px-2 pb-2"
+          >
+            <Icon
+              className={`size-[22px] transition-colors ${active ? "text-primary-strong" : "text-muted-foreground"}`}
+              strokeWidth={active ? 2.6 : 2}
+            />
+            <span
+              className={`text-[11px] transition-colors ${
+                active ? "font-bold text-primary-strong" : "font-semibold text-muted-foreground"
+              }`}
+            >
+              {TAB_META[tab].label}
+            </span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

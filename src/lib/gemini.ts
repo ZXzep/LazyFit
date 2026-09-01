@@ -160,6 +160,91 @@ export async function estimateMeal(input: {
 }
 
 // ---------------------------------------------------------------------------
+//  Coach chat — free-form Q&A grounded in the user's own tracked data
+// ---------------------------------------------------------------------------
+export interface CoachTurn {
+  role: "user" | "model";
+  content: string;
+}
+
+const COACH_SYSTEM = `คุณคือ "โค้ชลาซี่" ผู้ช่วยในแอป LazyFit — แอปลดน้ำหนักสายขี้เกียจ แบบยืดหยุ่น 80/20
+
+หน้าที่: ตอบคำถามของผู้ใช้เรื่องการกิน การออกกำลังกาย น้ำหนัก และเป้าหมาย โดยอิงจาก "ข้อมูลผู้ใช้" ที่แนบมาด้านล่างนี้เท่านั้น
+
+วิธีตอบ:
+- เป็นกันเองเหมือนเพื่อนที่พอรู้เรื่องโภชนาการ ไม่ใช่หมอหรือเทรนเนอร์ดุ ๆ
+- ให้กำลังใจ ไม่ตัดสิน ไม่ดุเรื่อง cheat ไม่สั่งให้อดอาหาร
+- สั้น กระชับ 1–4 ประโยค ตอบให้ตรงคำถาม เป็นข้อความธรรมดา ไม่ต้องใส่หัวข้อหรือ bullet ยาว ๆ
+- ใช้ตัวเลขจาก "ข้อมูลผู้ใช้" เท่านั้น ห้ามเดาตัวเลขที่ไม่มี ถ้าข้อมูลไม่พอให้บอกตรง ๆ ว่ายังไม่มีข้อมูล และชวนให้ไปบันทึกเพิ่ม
+- เวลาแนะนำเมนู ให้คำนึงถึงแคลที่ "เหลือกินได้" ของวันนี้ และเสนอเป็นอาหารไทยหากินง่าย
+- ตอบเป็นภาษาไทย เรียกผู้ใช้ด้วยชื่อเล่นได้ถ้ามี ใช้อีโมจิได้บ้างแต่พองาม
+
+ขอบเขต:
+- ถ้าถามนอกเรื่องสุขภาพ/อาหาร/ออกกำลังกาย/แอป ให้บอกน่ารัก ๆ ว่าช่วยได้เฉพาะเรื่องพวกนี้
+- เรื่องอาการป่วย ยา หรือโรคประจำตัว ให้แนะนำไปปรึกษาแพทย์ ไม่วินิจฉัยเอง
+- ไม่แนะนำให้กินต่ำกว่า ~1,200 kcal/วัน หรือการอดอาหารสุดโต่ง`;
+
+/**
+ * One-shot (non-streaming) chat completion for the in-app coach. `context`
+ * is a plain-text snapshot of the user's data, folded into the system prompt.
+ */
+export async function chatWithCoach(input: {
+  turns: CoachTurn[];
+  context: string;
+}): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new GeminiError("GEMINI_API_KEY is not set", 500);
+
+  const body = {
+    system_instruction: {
+      parts: [{ text: `${COACH_SYSTEM}\n\n---\n${input.context}` }],
+    },
+    contents: input.turns.map((t) => ({
+      role: t.role,
+      parts: [{ text: t.content }],
+    })),
+    generationConfig: {
+      temperature: 0.6,
+      topP: 0.95,
+      thinkingConfig: { thinkingBudget: 0 },
+      maxOutputTokens: 600,
+    },
+  };
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/${MODEL}:generateContent?key=${apiKey}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(20_000),
+    });
+  } catch (err) {
+    throw new GeminiError("ต่อ Gemini ไม่ได้ (timeout / network)", 504, String(err));
+  }
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new GeminiError(
+      `Gemini API responded ${res.status}`,
+      res.status === 429 ? 429 : 502,
+      detail,
+    );
+  }
+
+  const json = (await res.json()) as GeminiGenerateResponse;
+  const text = json?.candidates?.[0]?.content?.parts
+    ?.map((p) => p.text ?? "")
+    .join("")
+    .trim();
+  if (!text) {
+    const finish = json?.candidates?.[0]?.finishReason;
+    throw new GeminiError(`Gemini returned no content (finishReason=${finish ?? "unknown"})`, 502);
+  }
+  return text;
+}
+
+// ---------------------------------------------------------------------------
 //  helpers
 // ---------------------------------------------------------------------------
 function round1(n: number) {
