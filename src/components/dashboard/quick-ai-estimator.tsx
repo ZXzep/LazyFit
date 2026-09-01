@@ -4,16 +4,11 @@ import { useRef, useState } from "react";
 import Image from "next/image";
 import { Camera, Loader2, Sparkles, X } from "lucide-react";
 import { say } from "@/lib/toast";
-import type { LogMealInput, MealEstimate, MealType } from "@/types/db";
+import type { LogMealInput, MealEstimate } from "@/types/db";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { MEAL_TYPE_META } from "@/lib/meals";
 import { fmt } from "@/lib/utils";
-
-const MEAL_BADGE: Record<MealType, { label: string; cls: string }> = {
-  clean: { label: "Clean 🥗", cls: "bg-primary/20 text-primary-strong" },
-  normal: { label: "ปกติ 🍚", cls: "bg-muted text-muted-foreground" },
-  cheat: { label: "Cheat 🍔", cls: "bg-rose-500/10 text-rose-600" },
-};
 
 interface SelectedImage {
   previewUrl: string;
@@ -175,9 +170,9 @@ export function QuickAiEstimator({
                   </p>
                 </div>
                 <span
-                  className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${MEAL_BADGE[result.meal_type].cls}`}
+                  className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${MEAL_TYPE_META[result.meal_type].badgeClass}`}
                 >
-                  {MEAL_BADGE[result.meal_type].label}
+                  {MEAL_TYPE_META[result.meal_type].label} {MEAL_TYPE_META[result.meal_type].emoji}
                 </span>
               </div>
 

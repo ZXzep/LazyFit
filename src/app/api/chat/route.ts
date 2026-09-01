@@ -167,7 +167,7 @@ function buildContext(d: {
   } else {
     for (const m of d.meals) {
       const tag =
-        m.meal_type === "cheat" ? " [cheat]" : m.meal_type === "clean" ? " [คลีน]" : "";
+        m.meal_type === "cheat" ? " [Cheat]" : m.meal_type === "clean" ? " [Clean]" : "";
       L.push(
         `  • ${clockLabel(m.eaten_at, d.tz)} ${m.food_name} — ${Math.round(m.calories)} kcal (P${Math.round(
           m.protein_g,

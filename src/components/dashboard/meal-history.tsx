@@ -4,14 +4,9 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight, Trash2, UtensilsCrossed } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { addDaysISO, clockLabel, thaiDateLabel } from "@/lib/date";
+import { MEAL_TYPE_META } from "@/lib/meals";
 import { fmt } from "@/lib/utils";
-import type { Meal, MealType } from "@/types/db";
-
-const BADGE: Record<MealType, { label: string; cls: string }> = {
-  clean: { label: "clean", cls: "bg-primary/20 text-primary-strong" },
-  normal: { label: "ปกติ", cls: "bg-muted text-muted-foreground" },
-  cheat: { label: "cheat", cls: "bg-rose-500/10 text-rose-600" },
-};
+import type { Meal } from "@/types/db";
 
 const MIN_OFFSET = -400; // ~13 months back is plenty
 
@@ -155,9 +150,9 @@ export function MealHistory({
                     <div className="flex items-center gap-1.5">
                       <span className="truncate font-medium">{m.food_name}</span>
                       <span
-                        className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${BADGE[m.meal_type].cls}`}
+                        className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${MEAL_TYPE_META[m.meal_type].badgeClass}`}
                       >
-                        {BADGE[m.meal_type].label}
+                        {MEAL_TYPE_META[m.meal_type].label}
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground">
