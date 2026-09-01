@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { estimateBurn } from "@/lib/calories";
 import { BUILTIN_BY_KEY } from "@/lib/activities";
 import { calcDailyTarget, goalFromWeights } from "@/lib/nutrition";
-import { todayISO } from "@/lib/date";
+import { addDaysISO, startOfDayISO, todayISO } from "@/lib/date";
 import type {
   LogMealInput,
   LogWorkoutInput,
@@ -126,6 +126,34 @@ export async function logMeal(input: LogMealInput): Promise<Meal> {
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard");
   return row as Meal;
+}
+
+// ---------------------------------------------------------------------------
+//  getMealsOn — one past day's meals, for the history stepper
+// ---------------------------------------------------------------------------
+export async function getMealsOn(dateISO: string): Promise<Meal[]> {
+  const day = z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "รูปแบบวันที่ไม่ถูกต้อง")
+    .parse(dateISO);
+  const { supabase, user } = await requireUser();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("timezone")
+    .eq("id", user.id)
+    .single();
+  const tz = profile?.timezone ?? "Asia/Bangkok";
+
+  const { data, error } = await supabase
+    .from("meals")
+    .select("*")
+    .gte("eaten_at", startOfDayISO(day, tz))
+    .lt("eaten_at", startOfDayISO(addDaysISO(day, 1), tz))
+    .order("eaten_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Meal[];
 }
 
 // ---------------------------------------------------------------------------

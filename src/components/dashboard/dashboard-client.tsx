@@ -18,6 +18,7 @@ import {
   deleteActivity,
   deleteMeal,
   deleteWorkout,
+  getMealsOn,
   logMeal,
   logWeight,
   logWorkout,
@@ -308,7 +309,14 @@ export function DashboardClient({
           {activeTab === "food" ? (
             <>
               <QuickAiEstimator busy={busy} onLog={handleLogMeal} />
-              <MealHistory meals={meals} tz={tz} busy={busy} onDelete={handleDeleteMeal} />
+              <MealHistory
+                meals={meals}
+                today={today}
+                tz={tz}
+                busy={busy}
+                onDelete={handleDeleteMeal}
+                onFetchDay={getMealsOn}
+              />
             </>
           ) : null}
 

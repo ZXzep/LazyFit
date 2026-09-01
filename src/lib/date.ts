@@ -48,6 +48,17 @@ export function thaiWeekday(iso: string): string {
   return ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"][d.getUTCDay()];
 }
 
+/** "อ. 26 ส.ค." for a plain "YYYY-MM-DD" (weekday + day + short month). */
+export function thaiDateLabel(iso: string): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  const md = new Intl.DateTimeFormat("th-TH-u-ca-gregory", {
+    timeZone: "UTC",
+    day: "numeric",
+    month: "short",
+  }).format(d);
+  return `${thaiWeekday(iso)}. ${md}`;
+}
+
 /** "18:30" — 24h clock for a Date or ISO string, in the given timezone. */
 export function clockLabel(d: Date | string, tz: string = APP_TZ): string {
   const date = typeof d === "string" ? new Date(d) : d;

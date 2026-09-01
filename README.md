@@ -1,177 +1,281 @@
+<div align="center">
+
 # 🥗 LazyFit
 
-แอปติดตามการลดน้ำหนักและมื้ออาหารแบบยืดหยุ่น (Flexible Diet & Habit Tracker)
-สำหรับสายขี้เกียจ — ไม่ต้องนับแคลอรีเอง ให้ AI ช่วยประเมิน แล้วกดปุ่มเดียวบันทึก
+**An AI-first weight-loss tracker for people who can't be bothered to count calories.**
 
-**Stack:** Next.js 14 (App Router) · TypeScript · Tailwind CSS · Framer Motion · Lucide
-· Supabase (Auth + Postgres + RLS) · Google Gemini API (free tier)
+Describe your meal in plain Thai — or just photograph it — and a vision LLM returns
+calories, macros, and a meal category. One tap logs it. An in-app coach then answers
+questions about *your* day, grounded in the data you've actually logged.
 
----
+![Next.js](https://img.shields.io/badge/Next.js_14-000?style=flat-square&logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=fff)
+![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?style=flat-square&logo=supabase&logoColor=000)
+![Postgres RLS](https://img.shields.io/badge/Postgres_RLS-4169E1?style=flat-square&logo=postgresql&logoColor=fff)
+![Gemini](https://img.shields.io/badge/Gemini_2.5_Flash-8E75B2?style=flat-square&logo=googlegemini&logoColor=fff)
+![Tailwind](https://img.shields.io/badge/Tailwind-06B6D4?style=flat-square&logo=tailwindcss&logoColor=fff)
 
-## Features
-
-| ฟีเจอร์ | อยู่ที่ไหน |
-| --- | --- |
-| **Welcome / Onboarding** (2 ขั้น) — เปิดแอปครั้งแรก → ① กล่องทักทายถามชื่อเล่น → ② เพศ/อายุ/ส่วนสูง/น้ำหนัก/กิจกรรม/เป้าหมาย → คำนวณแคลอรีต่อวัน (Mifflin-St Jeor BMR × activity × goal) แสดงผลสด | `src/components/dashboard/onboarding-sheet.tsx` + `src/lib/nutrition.ts` |
-| **Quick AI Calorie Estimator** — พิมพ์ชื่ออาหารไทย/อัปโหลดรูป → ได้ JSON แคลอรี+แมโคร → "Log This Meal" | `src/components/dashboard/quick-ai-estimator.tsx` + `src/app/api/estimate-meal/route.ts` |
-| **Meal history** — รายการมื้อวันนี้: เวลา · ชื่ออาหาร · สิ่งที่พิมพ์ · แมโคร · แคลอรี · ลบได้ | `src/components/dashboard/meal-history.tsx` |
-| **Workout timer** — เลือกกิจกรรม → จับเวลา: countdown จากปุ่ม `[15/20/25/30]` หรือ "ไม่กำหนด" นับขึ้นจนกว่าจะพอ · pause/resume · อยู่รอดตอน reload/ปิดจอ (localStorage + wall-clock) · countdown ครบ = log อัตโนมัติ | `src/components/dashboard/workout-card.tsx` + `src/hooks/use-workout-timer.ts` |
-| **หลายกิจกรรม** — built-in 8 อย่าง (สเต็ปเปอร์/ฮูลาฮูป/เดิน/วิ่ง/ปั่น/กระโดดเชือก/เต้น/โยคะ) + เพิ่มเองได้ (ชื่อ + emoji + ความหนัก เบา/กลาง/หนัก) เก็บใน `user_activities` | `src/lib/activities.ts` |
-| **80/20 Flexibility Weekly Dashboard** — Progress bar โควตา Cheat Meal, สมดุลแคลอรีรายวัน/สัปดาห์, กราฟน้ำหนัก | `src/components/dashboard/weekly-flex-card.tsx`, `caloric-balance-card.tsx`, `weight-trend-card.tsx` |
-
-Mobile-first, PWA-ready (`src/app/manifest.ts`), รองรับ Dark/Light theme (`next-themes`).
+</div>
 
 ---
 
-## 1. ตั้งค่า Supabase
+## Why it exists
 
-Schema ทั้งหมดอยู่ในไฟล์เดียว: [`supabase/migrations/20260830150500_init_lazyfit.sql`](supabase/migrations/)
+Most diet apps fail because logging a meal is tedious — search a database, pick a
+portion, adjust the grams. LazyFit's bet is that an LLM is *good enough* at
+estimating a home-cooked Thai plate that the honest tradeoff — "roughly right,
+instantly" beats "precise, but you'll quit in a week" — is worth making. The whole
+app is built around removing friction:
 
-### ทาง A — Cloud (supabase.com) ✅ ง่ายสุด ไม่ต้องลง Docker
-
-1. สร้างโปรเจกต์ที่ [supabase.com](https://supabase.com/dashboard)
-2. **SQL Editor → New query** → วางไฟล์ migration ทั้งไฟล์ → **Run**
-   (หรือถ้าจะใช้ CLI push: `npx supabase login` → `npx supabase link --project-ref <ref>` → `npm run db:push`)
-3. **Project Settings → API** → copy `Project URL` + `anon public key` ใส่ `.env.local`:
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=https://<ref>.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon public key>
-   ```
-
-### ทาง B — Local dev (Supabase CLI + Docker) — ออปชัน
-
-ต้องมี Docker Desktop เปิดอยู่ เหมาะตอนอยากทดสอบ migration/reset บ่อย ๆ โดยไม่แตะ cloud
-
-```bash
-npm run db:start     # ดึง image (ครั้งแรก ~2-3GB) + รัน migration + seed
-npm run db:status    # โชว์ URL + anon key ของ local → เอาไปใส่ .env.local (URL = http://127.0.0.1:54321)
-```
-Studio :54323 · กล่องอีเมล (magic link) :54324 · `npm run db:reset` = รันใหม่ทั้งหมด
-
-### Auth (ทั้งสองทาง)
-
-- **Cloud**: **Authentication → URL Configuration** เพิ่ม `http://localhost:3000/auth/callback` (+ โดเมน prod) ใน Redirect URLs
-  · เปิด provider **Email** (magic link) และ/หรือ **Google** (redirect URI = `https://<ref>.supabase.co/auth/v1/callback`)
-- **Local**: ตั้งไว้ให้แล้วใน `config.toml` · magic link อ่านที่ Mailpit → http://127.0.0.1:54324
-  · Google local → ใส่ key ใน `supabase/.env` แล้วเปิด `[auth.external.google] enabled = true`
-
-## 2. ตั้งค่า Gemini
-
-1. รับ API key ฟรีที่ [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
-2. โมเดลแนะนำสำหรับ free tier: `gemini-2.5-flash` (รองรับทั้ง text + รูปภาพ, ปิด thinking ไว้เพื่อความเร็ว)
-
-## 3. รันโปรเจกต์
-
-```bash
-npm install
-cp .env.example .env.local   # เติม Supabase URL/anon key + GEMINI_API_KEY
-npm run dev                  # (ถ้าใช้ local Supabase: npm run db:start ก่อน)
-```
-
-เปิด http://localhost:3000 → กรอกอีเมล → กด "ส่งลิงก์เข้าสู่ระบบ" → เปิดอีเมลกดลิงก์ → เข้า `/dashboard`
-
-### Dev login (ข้ามอีเมล เวลาเทสต์)
-
-ปิด email confirmation ก่อน: **Authentication → Providers → Email → "Confirm email" = off**
-แล้ว:
-
-```bash
-node --env-file=.env.local scripts/dev-login.mjs your.email@example.com yourpassword
-```
-
-สคริปต์จะสร้าง user (ครั้งแรก) + คืน session cookie สำหรับแปะทดสอบใน browser
-
-### Environment variables
-
-| ตัวแปร | ใช้ทำอะไร |
-| --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | เชื่อม Supabase (client + server) |
-| `GEMINI_API_KEY` | เรียก Gemini จากฝั่ง server เท่านั้น (ไม่ถูก expose) |
-| `GEMINI_MODEL` | override โมเดล (ดีฟอลต์ `gemini-2.5-flash`) |
-| `NEXT_PUBLIC_SITE_URL` | base URL สำหรับ auth redirect |
+- **No food database, no barcode scanner.** You type `กะเพราหมูกรอบไข่ดาว` or snap a photo.
+- **80/20, not 100/0.** A weekly *cheat-meal quota* is a first-class feature, not a failure state.
+- **Zero configuration to start.** Sensible defaults everywhere; onboarding computes a
+  personal target with a live preview but every field has a fallback.
+- **Mobile-first PWA**, Thai-language UI, per-user timezone (Bangkok by default).
 
 ---
 
-## API: `POST /api/estimate-meal`
+## 🤖 The AI, in detail
 
-**Request** (ต้องล็อกอิน — ตรวจ session ผ่าน Supabase cookie)
+Two distinct LLM surfaces, both talking to **Gemini 2.5 Flash over the raw REST API**
+(no SDK dependency) from server-only code. The API key never reaches the client, and
+every call is gated behind an authenticated Supabase session so it can't be used as
+an open proxy.
+
+### 1. Meal estimator — `POST /api/estimate-meal`
+
+Turns free text and/or a photo into a **strictly-typed** nutrition estimate.
 
 ```jsonc
-{ "text": "กะเพราหมูกรอบไข่ดาว" }
-// หรือ
-{ "imageBase64": "data:image/jpeg;base64,...", "imageMimeType": "image/jpeg" }
-```
+// request  (text, image, or both)
+{ "text": "กะเพราหมูกรอบไข่ดาว พิเศษ" }
+{ "imageBase64": "data:image/jpeg;base64,…", "imageMimeType": "image/jpeg" }
 
-**Response 200**
-
-```json
+// response 200
 {
   "food_name": "กะเพราหมูกรอบไข่ดาว",
-  "calories": 720,
-  "protein": 28,
-  "carbs": 65,
-  "fat": 38,
-  "meal_type": "cheat",
+  "calories": 720, "protein": 28, "carbs": 65, "fat": 38,
+  "meal_type": "cheat",              // clean | normal | cheat  → drives the weekly quota
   "tip": "อร่อยได้ ครั้งหน้าลองเปลี่ยนหมูกรอบเป็นหมูสับ จะเบาลงเยอะ",
   "confidence": 0.7
 }
 ```
 
-ใช้ Gemini structured output (`responseSchema`) + ตรวจซ้ำด้วย Zod เสมอ →
-การันตีว่า JSON ที่ client ได้รับถูก shape เสมอ
+**What makes it reliable:**
+
+| Concern | How it's handled |
+| --- | --- |
+| Malformed model output | Gemini `responseSchema` (JSON-schema constrained decoding) **and** a second-pass Zod parse server-side — the client is guaranteed a valid `MealEstimate` shape or a typed error |
+| `"350 kcal"` / `"12g"` string leakage | `coerceNumbers()` normalises stringy numerics before validation |
+| Latency | `thinkingConfig.thinkingBudget: 0` (the task is simple), `temperature: 0.3`, 20 s `AbortSignal.timeout` |
+| Vision + text in one call | Photo is sent as `inline_data`; multiple items in an image are folded into "one meal" by the system prompt |
+| Leaking internals to users | `GeminiError` carries an HTTP status + a **safe `publicMessage`** ("used AI too often, take a break") separate from the logged detail |
+| Portion / Thai-food nuance | System prompt encodes local serving sizes, the clean/normal/cheat rubric, and a non-judgemental, encouraging tone for `tip` |
+
+### 2. Coach chat — `POST /api/chat`
+
+A conversational assistant ("โค้ชลาซี่") that answers questions like *"เหลือกินได้อีกกี่แคล"*
+or *"มื้อเย็นกินอะไรดีให้อยู่ในเป้า"*.
+
+The interesting part is **grounding**: the client sends only the chat transcript. The
+route handler loads the user's own data server-side — today's meals and workouts, the
+7-day summary RPC, the last 30 weight points — and renders it into a compact
+plain-text snapshot that's folded into the system prompt:
+
+```
+[ข้อมูลผู้ใช้ • วันนี้ 2026-09-01 • เขตเวลา Asia/Bangkok]
+ชื่อเล่น: … · เป้าแคลอรีต่อวัน: 1,720 kcal · โควตามื้อ cheat: 1/3
+
+— มื้ออาหารวันนี้: กินไปแล้ว 1,240 kcal (2 รายการ)
+  • 08:15 ข้าวไข่เจียว — 430 kcal (P14/C48/F20)
+  • 12:40 ส้มตำไก่ย่าง — 810 kcal (P52/C40/F44)
+— สรุปวันนี้: สุทธิ = 1,090 kcal · ยังกินได้อีกประมาณ 630 kcal
+…
+```
+
+Because the numbers come from the server, the model **can't be prompt-injected into
+inventing them**, and the client can't inflate the context window. Other safeguards:
+
+- Transcript is trimmed to the last 16 turns and re-sliced so it always starts and
+  ends on a user turn (a Gemini API requirement).
+- System prompt scopes the assistant to food / exercise / weight, defers medical
+  questions to a doctor, and refuses to endorse sub-1,200 kcal or extreme fasting.
+- Same typed-error + safe-message handling as the estimator.
+
+### Shared AI plumbing — [`src/lib/gemini.ts`](src/lib/gemini.ts)
+
+One ~270-line module: request builders for both surfaces, the response JSON schema,
+number coercion, the `GeminiError` type, and a 20 s timeout wrapper. No SDK, no
+streaming complexity — just `fetch` and Zod.
 
 ---
 
-## โครงสร้างโปรเจกต์
+## Beyond the AI
 
+<table>
+<tr><td width="50%" valign="top">
+
+**Row Level Security is the real auth layer**
+Every table is owner-only via `auth.uid() = user_id`; the three log tables get
+identical policies generated by a `DO $$` loop. Views use `security_invoker` and the
+weekly RPC is `security invoker` so the caller's RLS still applies. Server Actions
+re-check `auth.getUser()` on top. A `security definer` trigger with a pinned
+`search_path` auto-provisions the profile row on signup.
+
+</td><td width="50%" valign="top">
+
+**Timezone-correct day math**
+"Today" and "this week" are computed in each user's IANA timezone — in TypeScript
+via `Intl.DateTimeFormat`, and in SQL via `... at time zone p.timezone` inside the
+daily/weekly rollup views. Week start (Mon/Sun) is configurable.
+
+</td></tr>
+<tr><td valign="top">
+
+**Wall-clock workout timer**
+[`use-workout-timer.ts`](src/hooks/use-workout-timer.ts) persists a snapshot
+(session start, banked seconds, running flag) to `localStorage` and recomputes
+elapsed time from `Date.now()` on mount and on `visibilitychange` — so it survives a
+reload or the phone screen turning off, instead of counting `setInterval` ticks.
+Countdown auto-logs on completion.
+
+</td><td valign="top">
+
+**Optimistic UI with rollback**
+The dashboard seeds state from an RSC, applies mutations locally (including the
+derived weekly bar chart, via a pure `bumpDay` reducer), then reverts + toasts on
+failure. Server Actions call `revalidatePath` to reconcile.
+
+</td></tr>
+<tr><td valign="top">
+
+**Dependency-light by choice**
+No chart library (hand-rolled SVG sparkline, bar strip, and timer ring), no Gemini
+SDK, no state manager, no `next/font` network fetch (self-hosted variable Thai
+font). ~12 runtime dependencies total.
+
+</td><td valign="top">
+
+**Details**
+Pre-paint inline script prevents theme flash · accent themes swap only `--primary*`
+HSL tokens · `prefers-reduced-motion` respected · safe-area insets · ARIA on the
+custom notched bottom-nav, switches, and sheets · centralised, randomised,
+non-judgemental microcopy (`say.*`).
+
+</td></tr>
+</table>
+
+---
+
+## Architecture
+
+```mermaid
+flowchart TD
+    U["Mobile PWA · Next.js App Router<br/>RSC + optimistic client state"]
+    MW["middleware.ts<br/>session refresh · route guard"]
+    SA["dashboard/actions.ts<br/>Server Actions · auth + Zod"]
+    API["Route Handlers<br/>/api/estimate-meal · /api/chat"]
+    GEM{{"Google Gemini 2.5 Flash<br/>text + vision"}}
+    DB[("Supabase Postgres<br/>Row Level Security · views · RPC")]
+
+    U -.-> MW
+    U -->|Server Action| SA
+    U -->|fetch| API
+    SA --> DB
+    API -->|"load user context (server-side)"| DB
+    API -->|"schema-constrained request"| GEM
+    GEM -->|JSON| API
+    API -->|"Zod re-validate → typed result"| U
 ```
-supabase/
-├── config.toml                          # local stack config (ports, auth, seed)
-├── migrations/
-│   ├── *_init_lazyfit.sql               # tables + RLS + trigger + views + RPC
-│   ├── *_onboarding_profile.sql         # sex / birth_year / activity_level / goal / onboarded_at
-│   └── *_activities_and_history.sql     # user_activities table + workouts.activity_emoji
-└── seed.sql                             # demo data (local only, comment ไว้)
-scripts/dev-login.mjs                    # dev helper: email+password → session cookie
-src/
-├── app/
-│   ├── api/estimate-meal/route.ts       # Gemini estimator endpoint
-│   ├── auth/callback/route.ts           # OAuth callback (เผื่ออนาคต)
-│   ├── dashboard/
-│   │   ├── page.tsx                     # Server Component — โหลดข้อมูลเริ่มต้น
-│   │   └── actions.ts                   # Server Actions: saveOnboarding / logMeal /
-│   │                                    #   logWorkout / logWeight / addActivity /
-│   │                                    #   deleteActivity / deleteMeal / deleteWorkout
-│   ├── login/page.tsx                   # email + password
-│   ├── layout.tsx · globals.css · manifest.ts
-├── components/dashboard/                # การ์ดทั้งหมด + onboarding-sheet + workout-card
-├── components/ui/                       # Button / Card / Progress
-├── hooks/use-workout-timer.ts           # timer state + localStorage + wall-clock
-├── lib/
-│   ├── supabase/{client,server,middleware}.ts
-│   ├── nutrition.ts                     # BMR / TDEE / daily target
-│   ├── activities.ts                    # built-in exercises + MET + intensity presets
-│   ├── gemini.ts                        # ตัวเรียก Gemini + schema + error type
-│   ├── calories.ts                      # estimateBurn (MET equation)
-│   └── date.ts                          # week / timezone / clock helpers
-└── types/db.ts
-```
 
-### npm scripts (DB)
+**Meal-logging lifecycle:** type/snap → `POST /api/estimate-meal` (auth → Zod →
+Gemini w/ `responseSchema` → coerce → Zod) → render the card → **"บันทึกมื้อนี้"** →
+`logMeal` Server Action (auth → Zod → insert under RLS → `revalidatePath`) →
+optimistic append + weekly-total bump.
 
-| script | ทำอะไร |
+---
+
+## Tech stack
+
+| Layer | Choice |
 | --- | --- |
-| `npm run db:start` / `db:stop` | เปิด/ปิด local Supabase stack |
-| `npm run db:status` | โชว์ URL + keys ของ local |
-| `npm run db:reset` | drop + รัน migration ทั้งหมด + seed ใหม่ |
-| `npm run db:new <name>` | สร้างไฟล์ migration ใหม่ (timestamp อัตโนมัติ) |
-| `npm run db:push` | ดัน migration ขึ้น cloud project ที่ link ไว้ |
-| `npm run db:diff -f <name>` | สร้าง migration จาก diff ของ schema ปัจจุบัน |
-| `npm run db:types` | gen TypeScript types → `src/types/supabase.ts` |
+| Framework | **Next.js 14** App Router — RSC, Server Actions, Route Handlers |
+| Language | **TypeScript** (strict) |
+| Data / Auth | **Supabase** — Postgres + RLS, email/password auth, `@supabase/ssr` cookie sessions |
+| AI | **Google Gemini 2.5 Flash** via REST — structured output + vision |
+| Validation | **Zod** everywhere a boundary is crossed (API bodies, Server Action inputs, LLM output) |
+| UI | **Tailwind CSS**, **Framer Motion** (sheet transitions), **Lucide** icons, **Sonner** toasts |
+| Platform | Installable **PWA** (manifest + iOS meta), deployed on **Vercel** |
 
-## หมายเหตุ
+---
 
-- `daily_calorie_target` มาจาก onboarding sheet (คำนวณอัตโนมัติ) — อยากคิดใหม่ ให้ set `profiles.onboarded_at = null` แล้วรีเฟรช กล่องจะเด้งอีกครั้ง
-- `weekly_cheat_quota` (ดีฟอลต์ 3) ยังไม่มีหน้าตั้งค่า — แก้ผ่าน Supabase table editor ไปก่อน
-- ใส่ไอคอน PWA จริงที่ `public/icons/icon-192.png`, `icon-512.png`, `maskable-512.png`
-- อยากได้ offline support เต็มรูปแบบ เพิ่ม `@ducanh2912/next-pwa` หรือ service worker เองได้
+## Project structure
+
+```
+src/
+├─ app/
+│  ├─ api/
+│  │  ├─ estimate-meal/route.ts   # Gemini text/vision → validated MealEstimate
+│  │  └─ chat/route.ts            # coach chat, grounded in the user's own data
+│  ├─ dashboard/
+│  │  ├─ page.tsx                 # RSC: parallel initial load
+│  │  └─ actions.ts               # Server Actions: log meal / workout / weight, CRUD
+│  ├─ settings/                   # profile, accent theme, activity toggles
+│  ├─ login/page.tsx              # email + password
+│  └─ layout.tsx · globals.css · manifest.ts
+├─ components/
+│  ├─ dashboard/                  # cards, onboarding sheet, workout timer, AI chat sheet
+│  └─ ui/                         # Button · Card · Progress
+├─ hooks/use-workout-timer.ts     # wall-clock timer, localStorage-persisted
+├─ lib/
+│  ├─ gemini.ts                   # REST wrapper, response schema, GeminiError
+│  ├─ supabase/{client,server,middleware}.ts
+│  ├─ nutrition.ts                # Mifflin-St Jeor BMR → TDEE → daily target
+│  ├─ calories.ts                 # ACSM MET burn equation
+│  ├─ activities.ts               # built-in exercises + MET / intensity presets
+│  ├─ date.ts                     # timezone-aware day / week math
+│  └─ themes.ts
+└─ types/db.ts
+supabase/
+├─ migrations/                    # schema · RLS policies · triggers · views · get_week_summary RPC
+└─ config.toml
+```
+
+---
+
+## Running locally
+
+**Prerequisites:** Node 18+, a [Supabase](https://supabase.com) project, and a free
+[Google AI Studio](https://aistudio.google.com/apikey) API key.
+
+```bash
+git clone https://github.com/ZXzep/LazyFit.git && cd LazyFit
+npm install
+cp .env.example .env.local            # fill in Supabase URL + anon key, GEMINI_API_KEY
+
+npx supabase link --project-ref <ref> # then apply the schema:
+npm run db:push                       # migrations, RLS, triggers, views, RPC
+
+npm run dev                           # http://localhost:3000
+```
+
+In the Supabase dashboard, enable the **Email** auth provider (password sign-in) and
+add `http://localhost:3000` to the allowed redirect URLs.
+
+<details>
+<summary>Key environment variables</summary>
+
+| Variable | Purpose |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase client + server |
+| `GEMINI_API_KEY` | Server-side only — never exposed to the browser |
+| `GEMINI_MODEL` | Override the model (default `gemini-2.5-flash`) |
+| `NEXT_PUBLIC_SITE_URL` | Base URL for auth redirects |
+
+</details>
+
+---
+
+<div align="center">
+<sub>Personal portfolio project · built with Next.js, Supabase, and Gemini.</sub>
+</div>
