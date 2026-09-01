@@ -441,9 +441,9 @@ function BottomNav({
           type="button"
           onClick={onOpenChat}
           aria-label="ถาม AI"
-          className="absolute left-1/2 top-[-24px] z-10 grid size-14 -translate-x-1/2 place-items-center rounded-full bg-gradient-to-br from-primary to-primary-strong text-primary-foreground shadow-[0_12px_26px_hsl(var(--primary)/0.55)] transition-transform active:scale-95"
+          className="absolute left-1/2 top-[-24px] z-10 grid size-14 -translate-x-1/2 place-items-center rounded-full bg-primary shadow-[0_10px_24px_hsl(var(--primary)/0.6)] transition-transform active:scale-95"
         >
-          <Sparkles className="size-6" strokeWidth={2.4} />
+          <AppLogo bare className="size-9" />
         </button>
 
         <div className="relative flex h-full">

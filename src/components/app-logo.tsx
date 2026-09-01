@@ -2,11 +2,14 @@
  * In-app logo. Inline SVG so it follows the active theme
  * (`--primary` tile, `--primary-foreground` marks). The favicon
  * (src/app/icon.svg) stays as-is.
+ *
+ * `bare` drops the rounded tile and renders just the marks — for placing the
+ * logo on an already-coloured surface (e.g. the nav's AI button).
  */
-export function AppLogo({ className }: { className?: string }) {
+export function AppLogo({ className, bare = false }: { className?: string; bare?: boolean }) {
   return (
     <svg viewBox="0 0 512 512" className={className} role="img" aria-label="LazyFit">
-      <rect width="512" height="512" rx="112" fill="hsl(var(--primary))" />
+      {!bare && <rect width="512" height="512" rx="112" fill="hsl(var(--primary))" />}
       <g fill="none" stroke="hsl(var(--primary-foreground))" strokeLinecap="round">
         <ellipse
           cx="256"

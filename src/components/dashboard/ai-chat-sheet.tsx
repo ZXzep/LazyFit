@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowUp, RotateCcw, Sparkles, X } from "lucide-react";
+import { ArrowUp, RotateCcw, X } from "lucide-react";
 import { AppLogo } from "@/components/app-logo";
 
 interface Turn {
@@ -116,8 +116,8 @@ export function AiChatSheet({
             <div className="shrink-0 border-b border-border/70 px-4 pb-3 pt-2.5">
               <div className="mx-auto mb-3 h-1 w-9 rounded-full bg-muted" />
               <div className="flex items-center gap-2.5">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-strong text-primary-foreground">
-                  <Sparkles className="size-[18px]" strokeWidth={2.4} />
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-primary">
+                  <AppLogo bare className="size-5" />
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-bold leading-tight">โค้ชลาซี่</p>
