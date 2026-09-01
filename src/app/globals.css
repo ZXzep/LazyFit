@@ -22,6 +22,19 @@
   color-scheme: light;
 }
 
+/* Accent themes — only the primary/tint tokens change; the app stays light. */
+:root[data-theme="pink"] {
+  --foreground: 336 24% 12%;
+  --card-foreground: 336 24% 12%;
+  --muted: 340 60% 96%;
+  --muted-foreground: 336 10% 44%;
+  --border: 340 40% 90%;
+  --primary: 342 84% 68%;
+  --primary-foreground: 0 0% 100%;
+  --primary-strong: 340 62% 46%;
+  --ring: 342 84% 68%;
+}
+
 @layer base {
   * {
     border-color: hsl(var(--border));

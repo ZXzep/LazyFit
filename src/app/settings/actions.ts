@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { BUILTIN_ACTIVITIES } from "@/lib/activities";
+import { THEME_KEYS, type ThemeKey } from "@/lib/themes";
 
 const BUILTIN_KEYS = BUILTIN_ACTIVITIES.map((a) => a.key);
 
@@ -36,6 +37,15 @@ const profileSchema = z.object({
   daily_calorie_target: z.number().int().min(800).max(6000).optional(),
   weekly_cheat_quota: z.number().int().min(0).max(21).optional(),
 });
+
+export async function setTheme(theme: string): Promise<void> {
+  const t = z.enum(THEME_KEYS as [ThemeKey, ...ThemeKey[]]).parse(theme);
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase.from("profiles").update({ theme: t }).eq("id", user.id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/settings");
+  revalidatePath("/dashboard");
+}
 
 export async function updateProfileSettings(
   input: z.input<typeof profileSchema>,

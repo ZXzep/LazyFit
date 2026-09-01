@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Loader2, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, Loader2, Plus, Trash2 } from "lucide-react";
 import { say } from "@/lib/toast";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AddActivityForm } from "@/components/dashboard/add-activity-form";
+import { ThemeApply, applyThemeNow } from "@/components/theme-apply";
 import { BUILTIN_ACTIVITIES } from "@/lib/activities";
+import { THEMES, normalizeTheme, type ThemeKey } from "@/lib/themes";
 import { addActivity, deleteActivity } from "@/app/dashboard/actions";
-import { setActivityKeys, updateProfileSettings } from "./actions";
+import { setActivityKeys, setTheme, updateProfileSettings } from "./actions";
 import type { Profile, UserActivity } from "@/types/db";
 
 export function SettingsClient({
@@ -34,9 +36,62 @@ export function SettingsClient({
 
       <div className="mt-1 space-y-4">
         <ProfileSection profile={profile} />
+        <ThemeSection initial={normalizeTheme(profile.theme)} />
         <ActivitySection profile={profile} initialActivities={initialActivities} />
       </div>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+function ThemeSection({ initial }: { initial: ThemeKey }) {
+  const [theme, setThemeState] = useState<ThemeKey>(initial);
+
+  async function choose(key: ThemeKey) {
+    if (key === theme) return;
+    const prev = theme;
+    setThemeState(key);
+    applyThemeNow(key); // instant
+    try {
+      await setTheme(key);
+      say.settingsSaved();
+    } catch {
+      setThemeState(prev);
+      applyThemeNow(prev);
+      say.oops();
+    }
+  }
+
+  return (
+    <Card>
+      <ThemeApply theme={theme} />
+      <h2 className="font-semibold">ธีมสี</h2>
+      <p className="mt-1 text-sm text-muted-foreground">เลือกสีที่ชอบ เปลี่ยนได้ตลอด</p>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        {THEMES.map((t) => {
+          const active = t.key === theme;
+          return (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => choose(t.key)}
+              aria-pressed={active}
+              className={`flex items-center gap-2.5 rounded-2xl border p-3 text-left transition-colors ${
+                active ? "border-primary bg-primary/10" : "border-border bg-background"
+              }`}
+            >
+              <span
+                className="size-7 shrink-0 rounded-full border border-black/10"
+                style={{ background: t.swatch }}
+              />
+              <span className="text-sm font-medium">{t.label}</span>
+              {active && <Check className="ml-auto size-4 text-primary-strong" />}
+            </button>
+          );
+        })}
+      </div>
+    </Card>
   );
 }
 

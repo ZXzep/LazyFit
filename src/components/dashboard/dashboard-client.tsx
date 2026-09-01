@@ -24,6 +24,8 @@ import {
 } from "@/app/dashboard/actions";
 import { greetingTH } from "@/lib/date";
 import { SettingsLink } from "@/components/settings-link";
+import { ThemeApply } from "@/components/theme-apply";
+import { normalizeTheme } from "@/lib/themes";
 import { SignOutButton } from "@/components/sign-out-button";
 import { CaloricBalanceCard } from "./caloric-balance-card";
 import { MealHistory } from "./meal-history";
@@ -236,6 +238,7 @@ export function DashboardClient({
 
   return (
     <div className="mx-auto min-h-dvh w-full max-w-md bg-background shadow-[0_0_48px_hsl(var(--foreground)/0.06)]">
+      <ThemeApply theme={normalizeTheme(profile?.theme)} />
       <header className="sticky top-0 z-30 border-b border-border/70 bg-background/90 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-xl">
         <div className="flex items-center justify-between">
           <div className="flex min-w-0 items-center gap-2.5">

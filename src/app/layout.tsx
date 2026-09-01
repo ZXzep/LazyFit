@@ -25,10 +25,14 @@ export const viewport: Viewport = {
   colorScheme: "light",
 };
 
+// Apply the saved accent theme before first paint (no flash).
+const THEME_SCRIPT = `try{var t=localStorage.getItem("lazyfit-theme");if(t)document.documentElement.dataset.theme=t}catch(e){}`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="th">
       <body className="font-sans antialiased">
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <Providers>{children}</Providers>
       </body>
     </html>
