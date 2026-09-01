@@ -3,8 +3,8 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Loader2, Sparkles } from "lucide-react";
-import Image from "next/image";
 import { say } from "@/lib/toast";
+import { AppLogo } from "@/components/app-logo";
 import { Button } from "@/components/ui/button";
 import { saveOnboarding } from "@/app/dashboard/actions";
 import {
@@ -106,7 +106,7 @@ export function OnboardingSheet({
         className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]"
       >
         <div className="mb-8 flex items-center gap-2">
-          <Image src="/icon.svg" alt="" width={36} height={36} className="size-9 rounded-xl" />
+          <AppLogo className="size-9 rounded-xl" />
           <span className="font-bold">LazyFit</span>
         </div>
         {/* progress dots */}

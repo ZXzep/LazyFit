@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import { ChartNoAxesCombined, Dumbbell, Home, Sparkles, Utensils, type LucideIcon } from "lucide-react";
 import { say } from "@/lib/toast";
+import { AppLogo } from "@/components/app-logo";
 import type {
   ActivityRef,
   LogMealInput,
@@ -242,7 +242,7 @@ export function DashboardClient({
       <header className="sticky top-0 z-30 border-b border-border/70 bg-background/90 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-xl">
         <div className="flex items-center justify-between">
           <div className="flex min-w-0 items-center gap-2.5">
-            <Image src="/icon.svg" alt="" width={40} height={40} className="size-10 rounded-xl" />
+            <AppLogo className="size-10 shrink-0 rounded-xl" />
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-strong">LazyFit</p>
               <p className="truncate text-sm text-muted-foreground">{greetingTH(tz)}, {name}</p>

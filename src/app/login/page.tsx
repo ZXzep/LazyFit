@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import { useRef, useState } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { say } from "@/lib/toast";
+import { AppLogo } from "@/components/app-logo";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
@@ -86,14 +86,7 @@ export default function LoginPage() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-6">
       <div className="mb-8 text-center">
-        <Image
-          src="/icon.svg"
-          alt="LazyFit"
-          width={64}
-          height={64}
-          priority
-          className="mx-auto mb-3 size-16 rounded-3xl shadow-lg shadow-primary/20"
-        />
+        <AppLogo className="mx-auto mb-3 size-16 rounded-3xl shadow-lg shadow-primary/20" />
         <h1 className="text-2xl font-bold">LazyFit</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {isSignup
