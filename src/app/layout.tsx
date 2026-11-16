@@ -11,6 +11,14 @@ export const metadata: Metadata = {
     "ติดตามมื้ออาหารและการเบิร์นแบบยืดหยุ่น 80/20 ให้ AI ช่วยประเมินแคลอรี ไม่ต้องนับให้ปวดหัว",
   manifest: "/manifest.webmanifest",
   applicationName: "LazyFit",
+  // iOS ignores SVG/manifest icons for "Add to Home Screen" and needs a PNG.
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "LazyFit" },
   formatDetection: { telephone: false },
 };
